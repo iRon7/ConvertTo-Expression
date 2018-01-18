@@ -33,7 +33,7 @@ PS C:\>@{Account="User01";Domain="Domain01";Admin="True"} | ConvertTo-Pson -Expa
 @{'Admin'='True';'Account'='User01';'Domain'='Domain01'}
 ```
 
-Convert an object to a PSON expression and to a PowerShell object:
+Convert an object to a PSON expression and to a PowerShell expression:
 
 ```powershell
 PS C:\>Get-Date | Select-Object -Property * | ConvertTo-Pson
@@ -75,10 +75,15 @@ TimeOfDay   : 19:27:43.0764893
 Year        : 2018
 ```
 
-Convert the WinInit Process to PSON format:
+Convert the WinInit Process to a PSON expression:
 
 ```powershell
 PS C:\>WinInitProcess = Get-Process WinInit | ConvertTo-Pson
+```
+Reveal complex object hierarchies:
+
+```powershell
+PS C:\>Get-Host | ConvertTo-PSON -Depth 4
 ```
 
 ## Parameters 
