@@ -4,7 +4,7 @@ Serializes an object to a PowerShell expression
 The ConvertTo-Pson cmdlet converts any object to a string in PowerShell Object
 Notation (PSON) format. The properties are converted to field names, the field
 values are converted to property values, and the methods are removed.
-You can then use the ConvertFrom-Pson (Invoke-Expression) cmdlet to convert a
+You can then use the ConvertFrom-Pson (`Invoke-Expression`) cmdlet to convert a
 PSON-formatted string to a PowerShell object, which is easily managed in
 Windows PowerShell.
 
@@ -89,12 +89,12 @@ PS C:\>Get-Host | ConvertTo-PSON -Depth 4
 ## Parameters 
 
 `-InputObject`  
-Specifies the objects to convert to JSON format. Enter a variable that contains
-the objects, or type a command or expression that gets the objects. You can also
-pipe an object to ConvertTo-Json.
+Specifies the objects to convert to a PSON expression. Enter a variable that
+contains the objects, or type a command or expression that gets the objects.
+You can also pipe an object to ConvertTo-Pson.
 
 `-Depth`  
-Specifies how many levels of contained objects are included in the JSON
+Specifies how many levels of contained objects are included in the PSON
 representation. The default value is 9.
 
 `-Expand`  
