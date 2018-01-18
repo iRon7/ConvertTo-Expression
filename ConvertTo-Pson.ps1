@@ -1,3 +1,20 @@
+<#PSScriptInfo
+.VERSION 2.2.2
+.GUID 5f167621-6abe-4153-a26c-f643e1716720
+.AUTHOR Ronald Bode (iRon)
+.COMPANYNAME 
+.COPYRIGHT 
+.TAGS PSON PowerShell Object Notation expression serialize
+.LICENSEURI https://github.com/iRon7/ConvertTo-PSON\LICENSE.txt
+.PROJECTURI https://github.com/iRon7/ConvertTo-PSON
+.ICONURI 
+.EXTERNALMODULEDEPENDENCIES 
+.REQUIREDSCRIPTS 
+.EXTERNALSCRIPTDEPENDENCIES 
+.RELEASENOTES
+.PRIVATEDATA 
+#>
+
 Function ConvertTo-Pson {
 	<#
 		.SYNOPSIS
@@ -141,7 +158,6 @@ Function ConvertTo-Pson {
 		.LINK
 			Invoke-Expression (Alias ConvertFrom-Pson)
 	#>
-
 	[CmdletBinding()][OutputType([String])]Param (
 		[Parameter(ValueFromPipeLine = $True)][Object[]]$InputObject, [Int]$Depth = 9, [Int]$Expand = 9,
 		[Int]$Indentation = 1, [String]$IndentChar = "`t", [ValidateSet("None", "Native", "Cast", "Strict")][String]$TypePrefix = "Cast",
