@@ -10,8 +10,9 @@ Windows PowerShell.
 
 ## Examples
 
-###Convert a Calendar object to a PowerShell expression
+Convert a Calendar object to a PowerShell expression
 
+```powershell
 PS C:\>(Get-UICulture).Calendar | ConvertTo-Pson
 
 [PSCustomObject]@{
@@ -23,17 +24,19 @@ PS C:\>(Get-UICulture).Calendar | ConvertTo-Pson
 	'MinSupportedDateTime' = [DateTime]'0001-01-01T00:00:00.0000000'
 	'TwoDigitYearMax' = 2029
 }
+```
+Compress the PSON output
 
-.EXAMPLE 
-
-PS C:\>@{Account="User01";Domain="Domain01";Admin="True"} | ConvertTo-Pson -Expand -1	# Compress the PSON output
+```powershell
+PS C:\>@{Account="User01";Domain="Domain01";Admin="True"} | ConvertTo-Pson -Expand -1	
 
 @{'Admin'='True';'Account'='User01';'Domain'='Domain01'}
+```
 
+Convert an object to a PSON string and PSON object
 
-.EXAMPLE 
-
-PS C:\>Get-Date | Select-Object -Property * | ConvertTo-Pson	# Convert an object to a PSON string and PSON object
+```powershell
+PS C:\>Get-Date | Select-Object -Property * | ConvertTo-Pson
 
 [PSCustomObject]@{
 	'Date' = [DateTime]'2018-01-09T00:00:00.0000000+01:00'
@@ -70,10 +73,13 @@ Second      : 43
 Ticks       : 636511228630764893
 TimeOfDay   : 19:27:43.0764893
 Year        : 2018
+```
 
-.EXAMPLE 
+Convert the WinInit Process to PSON format
 
-PS C:\>WinInitProcess = Get-Process WinInit | ConvertTo-Pson	# Convert the WinInit Process to PSON format
+```powershell
+PS C:\>WinInitProcess = Get-Process WinInit | ConvertTo-Pson
+```
 
 ## Parameters 
 
@@ -132,6 +138,6 @@ Defines how the explicite the object type is being parsed:
 	system (.Net) objects to PSCustomObject objects.
 
 `NewLine`  
-	Specifies which characters to use for a new line. The default is defined by
-	the operating system.
+Specifies which characters to use for a new line. The default is defined by
+the operating system.
 
