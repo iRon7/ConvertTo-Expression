@@ -5,7 +5,7 @@
 .COMPANYNAME 
 .COPYRIGHT 
 .TAGS PSON PowerShell Object Notation expression serialize
-.LICENSEURI https://github.com/iRon7/ConvertTo-PSON\LICENSE.txt
+.LICENSEURI https://github.com/iRon7/ConvertTo-PSON/LICENSE.txt
 .PROJECTURI https://github.com/iRon7/ConvertTo-PSON
 .ICONURI 
 .EXTERNALMODULEDEPENDENCIES 
