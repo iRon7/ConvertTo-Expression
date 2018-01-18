@@ -2,6 +2,7 @@
 .VERSION 2.2.2
 .GUID 5f167621-6abe-4153-a26c-f643e1716720
 .AUTHOR Ronald Bode (iRon)
+.DESCRIPTION Serializes an object to a PowerShell expression.
 .COMPANYNAME 
 .COPYRIGHT 
 .TAGS PSON PowerShell Object Notation expression serialize
@@ -18,7 +19,7 @@
 Function ConvertTo-Pson {
 	<#
 		.SYNOPSIS
-			Serializes an object to a PowerShell expression
+			Serializes an object to a PowerShell expression.
 
 		.DESCRIPTION
 			The ConvertTo-Pson cmdlet converts any object to a string in PowerShell Object
