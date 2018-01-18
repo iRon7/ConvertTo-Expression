@@ -1,4 +1,4 @@
-## ConvertTo-PSON
+# ConvertTo-PSON
 Serializes an object to a PowerShell expression
 
 The ConvertTo-Pson cmdlet converts any object to a string in PowerShell Object
@@ -8,73 +8,11 @@ You can then use the ConvertFrom-Pson (Invoke-Expression) cmdlet to convert a
 PSON-formatted string to a PowerShell object, which is easily managed in
 Windows PowerShell.
 
-# Parameters 
-InputObject
-Specifies the objects to convert to JSON format. Enter a variable that contains
-the objects, or type a command or expression that gets the objects. You can also
-pipe an object to ConvertTo-Json.
+## Examples
 
-.PARAMETER Depth
-Specifies how many levels of contained objects are included in the JSON
-representation. The default value is 9.
+###Convert a Calendar object to a PowerShell expression
 
-.PARAMETER Expand
-Specifies till what level the contained objects are expanded over separate lines
-and indented according to the -Indentation and -IndentChar parameters.
-The default value is 9.
-
-A negative value will remove redundant spaces and compress the PSON expression to
-a single line (except for multiline strings).
-
-Xml documents and multiline strings are embedded in a "here string" and aligned
-to the left.
-
-.PARAMETER Indentation
-Specifies how many IndentChars to write for each level in the hierarchy.
-
-.PARAMETER IndentChar
-Specifies which character to use for indenting.
-
-.PARAMETER Type
-Defines how the explicite the object type is being parsed:
-
--Type None
-	No type information will be added to the (embedded) objects and values in
-	the PSON string. This means that objects and values will be parsed to any
-	of these data types when reading them back with ConvertFrom-Pson
-	(Invoke-Expression): a numeric value, a [String] ('...'), an [Array] 
-	(@(...)) or a [HashTable] (@{...}).
-
--Type Native
-	The original type prefix is added to the (embedded) objects and values in
-	the PSON string. Note that most system (.Net) objects can’t be read back
-	with ConvertFrom-Pson (Invoke-Expression), but -SetType Name can help to
-	reveal (embedded) object types and hierarchies.
-
--Type Cast (Default)
-	The type prefix is only added to (embedded) objects and values when required
-	and optimized for read back with ConvertFrom-Pson (Invoke-Expression) by e.g.
-	converting system (.Net) objects to PSCustomObject objects. Numeric values
-	won't have a strict type and therefor parsed to the default type that fits
-	the value when read back with ConvertFrom-Pson (Invoke-Expression).
-
--Type Strict
-	All (embedded) objects and values will have an explicit type prefix optimized
-	for read back with ConvertFrom-Pson (Invoke-Expression) by e.g. converting
-	system (.Net) objects to PSCustomObject objects.
-
-.PARAMETER NewLine
-Specifies which characters to use for a new line. The default is defined by the
-Operating System.
-
-.PARAMETER Expand
-Optional parameter containing an array of strings.  When calling Invoke-Pester,
-it is possible to specify a -Tag parameter which will only execute Describe blocks
-containing the same Tag.
-
-.EXAMPLE 
-
-PS C:\>(Get-UICulture).Calendar | ConvertTo-Pson	# Convert a Calendar object to a PowerShell expression
+PS C:\>(Get-UICulture).Calendar | ConvertTo-Pson
 
 [PSCustomObject]@{
 	'AlgorithmType' = 'SolarCalendar'
@@ -136,4 +74,64 @@ Year        : 2018
 .EXAMPLE 
 
 PS C:\>WinInitProcess = Get-Process WinInit | ConvertTo-Pson	# Convert the WinInit Process to PSON format
+
+## Parameters 
+
+`InputObject`  
+Specifies the objects to convert to JSON format. Enter a variable that contains
+the objects, or type a command or expression that gets the objects. You can also
+pipe an object to ConvertTo-Json.
+
+`Depth`  
+Specifies how many levels of contained objects are included in the JSON
+representation. The default value is 9.
+
+`Expand`  
+Specifies till what level the contained objects are expanded over separate lines
+and indented according to the -Indentation and -IndentChar parameters.
+The default value is 9.
+
+A negative value will remove redundant spaces and compress the PSON expression to
+a single line (except for multiline strings).
+
+Xml documents and multiline strings are embedded in a "here string" and aligned
+to the left.
+
+`Indentation`  
+Specifies how many IndentChars to write for each level in the hierarchy.
+
+`IndentChar`  
+Specifies which character to use for indenting.
+
+`Type`  
+Defines how the explicite the object type is being parsed:
+
+	`-Type None`  
+	No type information will be added to the (embedded) objects and values in
+	the PSON string. This means that objects and values will be parsed to any
+	of these data types when reading them back with ConvertFrom-Pson
+	(Invoke-Expression): a numeric value, a [String] ('...'), an [Array] 
+	(@(...)) or a [HashTable] (@{...}).
+
+	`-Type Native`  
+	The original type prefix is added to the (embedded) objects and values in
+	the PSON string. Note that most system (.Net) objects can’t be read back
+	with ConvertFrom-Pson (Invoke-Expression), but -SetType Name can help to
+	reveal (embedded) object types and hierarchies.
+
+	`-Type Cast` (Default)  
+	The type prefix is only added to (embedded) objects and values when required
+	and optimized for read back with ConvertFrom-Pson (Invoke-Expression) by e.g.
+	converting system (.Net) objects to PSCustomObject objects. Numeric values
+	won't have a strict type and therefor parsed to the default type that fits
+	the value when read back with ConvertFrom-Pson (Invoke-Expression).
+
+	`-Type Strict`
+	All (embedded) objects and values will have an explicit type prefix optimized
+	for read back with ConvertFrom-Pson (Invoke-Expression) by e.g. converting
+	system (.Net) objects to PSCustomObject objects.
+
+`NewLine`  
+	Specifies which characters to use for a new line. The default is defined by
+	the operating system.
 
