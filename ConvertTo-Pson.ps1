@@ -199,4 +199,4 @@ Function ConvertTo-Pson {
 		}
 	}
 } Set-Alias PSON ConvertTo-Pson -Description "Convert variable to PSON"
-Set-Alias ConvertFrom-Pson Invoke-Expression -Description "Convert variable from PSON"
+Set-Alias ConvertFrom-Pson Invoke-Expression -Description "Convert object from PSON"
