@@ -33,7 +33,7 @@ PS C:\>@{Account="User01";Domain="Domain01";Admin="True"} | ConvertTo-Pson -Expa
 @{'Admin'='True';'Account'='User01';'Domain'='Domain01'}
 ```
 
-Convert an object to a PSON expression and to a PowerShell expression:
+Convert an object to a PSON expression and back to a PowerShell expression:
 
 ```powershell
 PS C:\>Get-Date | Select-Object -Property * | ConvertTo-Pson
