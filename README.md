@@ -99,7 +99,7 @@ representation. The default value is 9.
 
 `-Expand`  
 Specifies till what level the contained objects are expanded over separate lines
-and indented according to the -Indentation and -IndentChar parameters.
+and indented according to the `-Indentation` and `-IndentChar` parameters.
 The default value is 9.
 
 A negative value will remove redundant spaces and compress the PSON expression to
@@ -119,10 +119,10 @@ Defines how the explicite the object type is being parsed:
 
 `-Type None`  
 No type information will be added to the (embedded) objects and values in
-the PSON string. This means that objects and values will be parsed to any
-of these data types when reading them back with ConvertFrom-Pson
-(Invoke-Expression): a numeric value, a [String] ('...'), an [Array] 
-(@(...)) or a [HashTable] (@{...}).
+the PSON string. This means that objects and values will be parsed to one
+of the following data types when reading them back with ConvertFrom-Pson
+(`Invoke-Expression`): a numeric value, a `[String] ('...')`, an `[Array] 
+(@(...))` or a `[HashTable] (@{...})`.
 
 `-Type Native`  
 The original type prefix is added to the (embedded) objects and values in
@@ -132,14 +132,14 @@ reveal (embedded) object types and hierarchies.
 
 `-Type Cast` (Default)  
 The type prefix is only added to (embedded) objects and values when required
-and optimized for read back with ConvertFrom-Pson (Invoke-Expression) by e.g.
+and optimized for read back with ConvertFrom-Pson (`Invoke-Expression`) by e.g.
 converting system (.Net) objects to PSCustomObject objects. Numeric values
 won't have a strict type and therefor parsed to the default type that fits
-the value when read back with ConvertFrom-Pson (Invoke-Expression).
+the value when read back with ConvertFrom-Pson (`Invoke-Expression`).
 
 `-Type Strict`
 All (embedded) objects and values will have an explicit type prefix optimized
-for read back with ConvertFrom-Pson (Invoke-Expression) by e.g. converting
+for read back with ConvertFrom-Pson (`Invoke-Expression`) by e.g. converting
 system (.Net) objects to PSCustomObject objects.
 
 `-NewLine`  
