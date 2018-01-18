@@ -10,7 +10,7 @@ Windows PowerShell.
 
 ## Examples
 
-Convert a Calendar object to a PowerShell expression
+Convert a Calendar object to a PowerShell expression:
 
 ```powershell
 PS C:\>(Get-UICulture).Calendar | ConvertTo-Pson
@@ -25,7 +25,7 @@ PS C:\>(Get-UICulture).Calendar | ConvertTo-Pson
 	'TwoDigitYearMax' = 2029
 }
 ```
-Compress the PSON output
+Compress the PSON output:
 
 ```powershell
 PS C:\>@{Account="User01";Domain="Domain01";Admin="True"} | ConvertTo-Pson -Expand -1	
@@ -33,7 +33,7 @@ PS C:\>@{Account="User01";Domain="Domain01";Admin="True"} | ConvertTo-Pson -Expa
 @{'Admin'='True';'Account'='User01';'Domain'='Domain01'}
 ```
 
-Convert an object to a PSON expression and to a PowerShell object
+Convert an object to a PSON expression and to a PowerShell object:
 
 ```powershell
 PS C:\>Get-Date | Select-Object -Property * | ConvertTo-Pson
@@ -75,7 +75,7 @@ TimeOfDay   : 19:27:43.0764893
 Year        : 2018
 ```
 
-Convert the WinInit Process to PSON format
+Convert the WinInit Process to PSON format:
 
 ```powershell
 PS C:\>WinInitProcess = Get-Process WinInit | ConvertTo-Pson
