@@ -1,5 +1,5 @@
 <#PSScriptInfo
-.VERSION 2.2.5
+.VERSION 2.2.6
 .GUID 5f167621-6abe-4153-a26c-f643e1716720
 .AUTHOR Ronald Bode (iRon)
 .DESCRIPTION Serializes an object to a PowerShell expression.
@@ -8,7 +8,7 @@
 .TAGS PSON PowerShell Object Notation expression serialize
 .LICENSEURI https://github.com/iRon7/ConvertTo-PSON/LICENSE.txt
 .PROJECTURI https://github.com/iRon7/ConvertTo-PSON
-.ICONURI https://github.com/iRon7/ConvertTo-PSON/blob/master/PsonIcon.png
+.ICONURI https://raw.githubusercontent.com/iRon7/ConvertTo-PSON/master/PsonIcon.png
 .EXTERNALMODULEDEPENDENCIES 
 .REQUIREDSCRIPTS 
 .EXTERNALSCRIPTDEPENDENCIES 
