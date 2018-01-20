@@ -1,5 +1,5 @@
 <#PSScriptInfo
-.VERSION 2.2.2
+.VERSION 2.2.3
 .GUID 5f167621-6abe-4153-a26c-f643e1716720
 .AUTHOR Ronald Bode (iRon)
 .DESCRIPTION Serializes an object to a PowerShell expression.
@@ -87,7 +87,10 @@ Function ConvertTo-Pson {
 			Specifies which characters to use for a new line. The default is defined by the
 			operating system.
 
-		.EXAMPLE 
+		.PARAMETER Iteration
+			Do not use (for internal use only).
+
+			.EXAMPLE 
 
 			PS C:\>(Get-UICulture).Calendar | ConvertTo-Pson	# Convert a Calendar object to a PowerShell expression
 
@@ -162,17 +165,18 @@ Function ConvertTo-Pson {
 	[CmdletBinding()][OutputType([String])]Param (
 		[Parameter(ValueFromPipeLine = $True)][Object[]]$InputObject, [Int]$Depth = 9, [Int]$Expand = 9,
 		[Int]$Indentation = 1, [String]$IndentChar = "`t", [ValidateSet("None", "Native", "Cast", "Strict")][String]$TypePrefix = "Cast",
-		[String]$NewLine = [System.Environment]::NewLine, [Parameter(DontShow)][Int]$i = 0
+		[String]$NewLine = [System.Environment]::NewLine, [Int]$Iteration = 0
 	)
 	$PipeLine = $Input | ForEach-Object {$_}; If ($PipeLine) {$InputObject = $PipeLine}
-	Function Iterate ($Value) {ConvertTo-Pson @(,$Value) $Depth $Expand $Indentation $IndentChar $TypePrefix $NewLine ($i + 1)}
-	Function Embed ($List, $Dictionary) {If ($i -ge $Depth) {If ($Null -ne $Dictionary) {Return "@{}"} Else {Return "@()"}}
+	Function Iterate ($Value) {ConvertTo-Pson @(,$Value) $Depth $Expand $Indentation $IndentChar $TypePrefix $NewLine ($Iteration + 1)}
+	Function Embed ($List, $Dictionary) {If ($Iteration -ge $Depth) {If ($Null -ne $Dictionary) {Return "@{}"} Else {Return "@()"}}
 		$Items = ForEach ($Key in $List) {If ($Null -ne $Dictionary) {"'$Key'$Space=$Space" + (Iterate $Dictionary.$Key)} Else {Iterate $Key}}
 		$Open, $Join, $Separator, $Close = If ($Null -ne $Dictionary) {"@{", ";$Space", "$LineUp$Tab", "}"} Else {"@(", ",$Space", ",$LineUp$Tab", ")"}
-		$Open + (&{If (($i -ge $Expand) -or (@($Items).Count -le 1)) {$Items -Join $Join} Else {"$LineUp$Tab$($Items -Join $Separator)$LineUp"}}) + $Close
+		$Open + (&{If (($Iteration -ge $Expand) -or (@($Items).Count -le 1)) {$Items -Join $Join} Else {"$LineUp$Tab$($Items -Join $Separator)$LineUp"}}) + $Close
 	}
 	$Object = If (@($InputObject).Count -eq 1) {@($InputObject)[0]} Else {$InputObject}
-	If ($Null -eq $Object) {"`$Null"} Else {$Space = If ($i -gt $Expand) {""} Else {" "}; $Tab = $IndentChar * $Indentation; $LineUp = "$NewLine$($Tab * $i)"
+	If ($Null -eq $Object) {"`$Null"} Else {
+		$Space = If ($Iteration -gt $Expand) {""} Else {" "}; $Tab = $IndentChar * $Indentation; $LineUp = "$NewLine$($Tab * $Iteration)"
 		$Type = $Object.GetType().Name; $Cast = $Null; $Enumerator = $Object.GetEnumerator.OverloadDefinitions
 		$PSON = If ($Object -is [Boolean]) {If ($Object) {'$True'} Else {'$False'}}
 		ElseIf ($Object -is [Char]) {$Cast = $Type; "'$Object'"}
