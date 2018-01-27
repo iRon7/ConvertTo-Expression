@@ -1,6 +1,6 @@
 |Version |Date      |Author      |Comments|
 |--------|----------|------------|--------|
-|01.xx.xx|2017-05-31|Ronald Bode |First releases|
+|01.xx.xx|2017&#8209;05&#8209;31|Ronald&nbsp;Bode |First releases|
 |02.10.02|2017-11-21|Ronald Bode |Recode along with GetEnumerator.OverloadDefinitions|
 |02.11.10|2017-12-11|Ronald Bode |Added support for [DataTable]|
 |        |          |            |New Embed function|
