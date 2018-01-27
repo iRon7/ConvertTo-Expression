@@ -21,3 +21,5 @@
 |   2.2.3|2017-01-19|Ronald Bode |Removed [Parameter(DontShow)] as it is not downwards compatible with PowerShell 2|
 |   2.2.4|2017-01-20|Ronald Bode |Added ICONURI|
 |   2.2.6|2017-01-20|Ronald Bode |Corrected ICONURI|
+|   2.2.7|2017-01-27|Ronald Bode |Renamed function to: ConvertTo-Expression|
+|   2.3.0|2017-01-27|Ronald Bode |Renamed solution to: ConvertTo-Expression|
