@@ -1,14 +1,14 @@
 <#PSScriptInfo
-.VERSION 2.2.6
+.VERSION 2.2.7
 .GUID 5f167621-6abe-4153-a26c-f643e1716720
 .AUTHOR Ronald Bode (iRon)
-.DESCRIPTION Serializes an object to a PowerShell expression.
+.DESCRIPTION Serializes an object to a PowerShell expression (PSON, PowerShell Object Notation).
 .COMPANYNAME 
 .COPYRIGHT 
 .TAGS PSON PowerShell Object Notation expression serialize
-.LICENSEURI https://github.com/iRon7/ConvertTo-PSON/LICENSE.txt
-.PROJECTURI https://github.com/iRon7/ConvertTo-PSON
-.ICONURI https://raw.githubusercontent.com/iRon7/ConvertTo-PSON/master/PsonIcon.png
+.LICENSEURI https://github.com/iRon7/ConvertTo-Expression/LICENSE.txt
+.PROJECTURI https://github.com/iRon7/ConvertTo-Expression
+.ICONURI https://raw.githubusercontent.com/iRon7/ConvertTo-Expression/master/PsonIcon.png
 .EXTERNALMODULEDEPENDENCIES 
 .REQUIREDSCRIPTS 
 .EXTERNALSCRIPTDEPENDENCIES 
@@ -16,23 +16,23 @@
 .PRIVATEDATA 
 #>
 
-Function ConvertTo-Pson {
+Function ConvertTo-Expression {
 	<#
 		.SYNOPSIS
 			Serializes an object to a PowerShell expression.
 
 		.DESCRIPTION
-			The ConvertTo-Pson cmdlet converts any object to a string in PowerShell Object
-			Notation (PSON) format. The properties are converted to field names, the field
-			values are converted to property values, and the methods are removed.
-			You can then use the ConvertFrom-Pson (Invoke-Expression) cmdlet to convert a
-			PSON-formatted string to a PowerShell object, which is easily managed in
-			Windows PowerShell.
+			The ConvertTo-Expression (alias ConvertTo-Pson) cmdlet converts any object to
+			a string in PowerShell Object Notation (PSON) format. The properties are
+			converted to field names, the field values are converted to property values,
+			and the methods are removed. You can then use the Invoke-Expression
+			(alias ConvertFrom-Pson) cmdlet to convert a PSON-formatted string to a
+			PowerShell object, which is easily managed in Windows PowerShell.
 
 		.PARAMETER InputObject
 			Specifies the objects to convert to a PSON expression. Enter a variable that
 			contains the objects, or type a command or expression that gets the objects.
-			You can also pipe an object to ConvertTo-Pson.
+			You can also pipe one or more objects to ConvertTo-Expression.
 
 		.PARAMETER Depth
 			Specifies how many levels of contained objects are included in the PSON
@@ -61,27 +61,27 @@ Function ConvertTo-Pson {
 			-Type None
 				No type information will be added to the (embedded) objects and values in
 				the PSON string. This means that objects and values will be parsed to one
-				of the following data types when reading them back with ConvertFrom-Pson
-				(Invoke-Expression): a numeric value, a [String] ('...'), an [Array] 
-				(@(...)) or a [HashTable] (@{...}).
+				of the following data types when reading them back with Invoke-Expression:
+				a numeric value, a [String] ('...'), an [Array] (@(...)) or a [HashTable]
+				(@{...}).
 
 			-Type Native
 				The original type prefix is added to the (embedded) objects and values in
 				the PSON string. Note that most system (.Net) objects can’t be read back
-				with ConvertFrom-Pson (Invoke-Expression), but -SetType Name can help to
-				reveal (embedded) object types and hierarchies.
+				with Invoke-Expression, but -SetType Name can help to reveal (embedded)
+				object types and hierarchies.
 
 			-Type Cast (Default)
-				The type prefix is only added to (embedded) objects and values when required
-				and optimized for read back with ConvertFrom-Pson (Invoke-Expression) by e.g.
+				The type prefix is only added to (embedded) objects and values when
+				required and optimized for read back with Invoke-Expression by e.g.
 				converting system (.Net) objects to PSCustomObject objects. Numeric values
 				won't have a strict type and therefor parsed to the default type that fits
-				the value when read back with ConvertFrom-Pson (Invoke-Expression).
+				the value when read back with Invoke-Expression.
 
 			-Type Strict
-				All (embedded) objects and values will have an explicit type prefix optimized
-				for read back with ConvertFrom-Pson (Invoke-Expression) by e.g. converting
-				system (.Net) objects to PSCustomObject objects.
+				All (embedded) objects and values will have an explicit type prefix
+				optimized for read back with Invoke-Expression by e.g. converting system
+				(.Net) objects to PSCustomObject objects.
 
 		.PARAMETER NewLine
 			Specifies which characters to use for a new line. The default is defined by the
@@ -92,7 +92,7 @@ Function ConvertTo-Pson {
 
 			.EXAMPLE 
 
-			PS C:\>(Get-UICulture).Calendar | ConvertTo-Pson	# Convert a Calendar object to a PowerShell expression
+			PS C:\>(Get-UICulture).Calendar | ConvertTo-Expression	# Convert a Calendar object to a PowerShell expression
 
 			[PSCustomObject]@{
 				'AlgorithmType' = 'SolarCalendar'
@@ -106,14 +106,14 @@ Function ConvertTo-Pson {
 
 		.EXAMPLE 
 
-			PS C:\>@{Account="User01";Domain="Domain01";Admin="True"} | ConvertTo-Pson -Expand -1	# Compress the PSON output
+			PS C:\>@{Account="User01";Domain="Domain01";Admin="True"} | ConvertTo-Expression -Expand -1	# Compress the PSON output
 
 			@{'Admin'='True';'Account'='User01';'Domain'='Domain01'}
 
 
 		.EXAMPLE 
 
-			PS C:\>Get-Date | Select-Object -Property * | ConvertTo-Pson	# Convert an object to a PSON expression and to a PowerShell object
+			PS C:\>Get-Date | Select-Object -Property * | ConvertTo-Expression	# Convert an object to a PSON expression and to a PowerShell object
 
 			[PSCustomObject]@{
 				'Date' = [DateTime]'2018-01-09T00:00:00.0000000+01:00'
@@ -133,7 +133,7 @@ Function ConvertTo-Pson {
 				'Year' = 2018
 			}
 
-			PS C:\>Get-Date | Select-Object -Property * | ConvertTo-Pson | ConvertFrom-Pson
+			PS C:\>Get-Date | Select-Object -Property * | ConvertTo-Expression | Invoke-Expression
 
 			Date        : 2018-01-09 12:00:00 AM
 			DateTime    : Tuesday, January 9, 2018 7:27:43 PM
@@ -153,11 +153,11 @@ Function ConvertTo-Pson {
 
 		.EXAMPLE 
 
-			PS C:\>WinInitProcess = Get-Process WinInit | ConvertTo-Pson	# Convert the WinInit Process to a PSON expression
+			PS C:\>WinInitProcess = Get-Process WinInit | ConvertTo-Expression	# Convert the WinInit Process to a PSON expression
 
 		.EXAMPLE 
 
-			PS C:\>Get-Host | ConvertTo-Pson -Depth 4	# Reveal complex object hierarchies
+			PS C:\>Get-Host | ConvertTo-Expression -Depth 4	# Reveal complex object hierarchies
 
 		.LINK
 			Invoke-Expression (Alias ConvertFrom-Pson)
@@ -178,7 +178,7 @@ Function ConvertTo-Pson {
 	If ($Null -eq $Object) {"`$Null"} Else {
 		$Space = If ($Iteration -gt $Expand) {""} Else {" "}; $Tab = $IndentChar * $Indentation; $LineUp = "$NewLine$($Tab * $Iteration)"
 		$Type = $Object.GetType().Name; $Cast = $Null; $Enumerator = $Object.GetEnumerator.OverloadDefinitions
-		$PSON = If ($Object -is [Boolean]) {If ($Object) {'$True'} Else {'$False'}}
+		$Expression = If ($Object -is [Boolean]) {If ($Object) {'$True'} Else {'$False'}}
 		ElseIf ($Object -is [Char]) {$Cast = $Type; "'$Object'"}
 		ElseIf ($Object -is [String]) {If ($Object -Match "[`r`n]") {"@'$NewLine$Object$NewLine'@$NewLine"} Else {"'$($Object.Replace('''', ''''''))'"}}
 		ElseIf ($Object -is [DateTime]) {$Cast = $Type; "'$($Object.ToString('o'))'"}
@@ -197,11 +197,12 @@ Function ConvertTo-Pson {
 			If ($Property) {$Type = "PSCustomObject"; $Cast = $Type; Embed $Names $Object} Else {$Object}
 		}
 		Switch ($TypePrefix) {
-			'None'  	{"$PSON"}
-			'Native'	{"[$($Object.GetType().Name)]$PSON"}
-			'Cast'  	{If ($Cast) {"[$Cast]$PSON"} Else {"$PSON"}}
-			'Strict'	{If ($Cast) {"[$Cast]$PSON"} Else {"[$Type]$PSON"}}
+			'None'  	{"$Expression"}
+			'Native'	{"[$($Object.GetType().Name)]$Expression"}
+			'Cast'  	{If ($Cast) {"[$Cast]$Expression"} Else {"$Expression"}}
+			'Strict'	{If ($Cast) {"[$Cast]$Expression"} Else {"[$Type]$Expression"}}
 		}
 	}
-} Set-Alias PSON ConvertTo-Pson -Description "Convert variable to PSON"
-Set-Alias ConvertFrom-Pson Invoke-Expression -Description "Convert object from PSON"
+} Set-Alias pson ConvertTo-Expression; Set-Alias ctex ConvertTo-Expression
+Set-Alias ConvertTo-Pson ConvertTo-Expression -Description "Serializes an object to a PowerShell expression"
+Set-Alias ConvertFrom-Pson  Invoke-Expression -Description "Parses a PowerShell expression to an object"
