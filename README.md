@@ -2,7 +2,7 @@
 Serializes an object to a PowerShell expression
 
 The `ConvertTo-Expression` (alias `ConvertTo-Pson`) cmdlet converts any object to a
-string in PowerShell Object Notation (PSON) format. The properties are converted
+string in PowerShell Object Notation (PSON) expression. The properties are converted
 to field names, the field values are converted to property values, and the methods
 are removed. You can  use the native `Invoke-Expression` (aliased `ConvertFrom-Pson`)
 cmdlet to convert a PSON expression back to a PowerShell object, which is easily
