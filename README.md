@@ -8,9 +8,9 @@ another system.
 
 ## Convert from expression
 An expression can be restored to an object by preceding it with an
-ampersand (&). An expression that is casted to a string can be
-restored to an object using the native Invoke-Expression cmdlet.
-An expression that is stored in a PowerShell (.ps1) file might also
+ampersand (`&`). An expression that is casted to a string can be
+restored to an object using the native `Invoke-Expression` cmdlet.
+An expression that is stored in a PowerShell (`.ps1`) file might also
 be directly invoked by the PowerShell dot-sourcing technique.
 
 
@@ -70,7 +70,7 @@ TimeOfDay   : 22:47:00
 Year        : 1963
 ```
 
-Compress the PSON output:
+Compress the PowerShell expression output:
 
 ```powershell
 PS C:\>@{Account="User01";Domain="Domain01";Admin="True"} | ConvertTo-Expression -Expand -1	
@@ -78,7 +78,7 @@ PS C:\>@{Account="User01";Domain="Domain01";Admin="True"} | ConvertTo-Expression
 @{'Admin'='True';'Account'='User01';'Domain'='Domain01'}
 ```
 
-Convert the WinInit Process to a PSON expression:
+Convert the WinInit Process to a PowerShell expression:
 
 ```powershell
 PS C:\>WinInitProcess = Get-Process WinInit | ConvertTo-Expression
@@ -92,24 +92,26 @@ PS C:\>Get-Host | ConvertTo-Expression -Depth 4
 ## Parameters 
 
 `-InputObject`  
-Specifies the objects to convert to a PSON expression. Enter a variable that
-contains the objects, or type a command or expression that gets the objects.
-You can also pipe one or more objects to ConvertTo-Expression.
+Specifies the objects to convert to a PowerShell expression. Enter
+a variable that contains the objects, or type a command or
+expression that gets the objects. You can also pipe one or more
+objects to `ConvertTo-Expression`.
 
 `-Depth`  
-Specifies how many levels of contained objects are included in the PSON
-representation. The default value is 9.
+Specifies how many levels of contained objects are included in the 
+PowerShell representation. The default value is `9`.
 
 `-Expand`  
-Specifies till what level the contained objects are expanded over separate lines
-and indented according to the `-Indentation` and `-IndentChar` parameters.
-The default value is 9.
+Specifies till what level the contained objects are expanded over
+separate lines and indented according to the `-Indentation` and 
+`-IndentChar` parameters. The default value is `9`.
 
-A negative value will remove redundant spaces and compress the PSON expression to
-a single line (except for multiline strings).
+A negative value will remove redundant spaces and compress the
+PowerShell expression to a single line (except for multi-line
+strings).
 
-Xml documents and multiline strings are embedded in a "here string" and aligned
-to the left.
+Xml documents and multi-line strings are embedded in a
+"here string" and aligned to the left.
 
 `-Indentation`  
 Specifies how many IndentChars to write for each level in the hierarchy.
@@ -117,33 +119,36 @@ Specifies how many IndentChars to write for each level in the hierarchy.
 `-IndentChar`  
 Specifies which character to use for indenting.
 
-`-Type`  
+`-TypePrefix`  
 Defines how the explicite the object type is being parsed:
 
-`-Type None`  
-No type information will be added to the (embedded) objects and values in
-the PSON string. This means that objects and values will be parsed to one
-of the following data types when reading them back with `Invoke-Expression`:
-a numeric value, a `[String] ('...')`, an `[Array] (@(...))` or a
+`-TypePrefix None`  
+No type information will be added to the (embedded) objects and
+values in the PowerShell expression. This means that objects
+and values will be parsed to one of the following data types
+when reading them back with `Invoke-Expression`: a numeric value,
+a `[String] ('...')`, an `[Array] (@(...))` or a
 `[HashTable] (@{...})`.
 
-`-Type Native`  
-The original type prefix is added to the (embedded) objects and values in
-the PSON string. Note that most system (.Net) objects can’t be read back
-with `Invoke-Expression`, but -SetType Name can help to reveal (embedded)
-object types and hierarchies.
+`-TypePrefix Native`  
+The original type prefix is added to the (embedded) objects and
+values in the PowerShell expression. Note that most system
+(.Net) objects can’t be read back with `Invoke-Expression`, but
+option might help to reveal (embedded) object types and
+hierarchies.
 
-`-Type Cast` (Default)  
-The type prefix is only added to (embedded) objects and values when required
-and optimized for read back with `Invoke-Expression` by e.g. converting system
-(.Net) objects to PSCustomObject objects. Numeric values won't have a strict
-type and therefor parsed to the default type that fits the value when read
-back with `Invoke-Expression`.
+`-TypePrefix Cast` (Default)  
+The type prefix is only added to (embedded) objects and values
+when required and optimized for read back with
+Invoke-Expression by e.g. converting system (.Net) objects to
+PSCustomObject objects. Numeric values won't have a strict
+type and therefor parsed to the default type that fits the
+value when restored.
 
-`-Type Strict`
-All (embedded) objects and values will have an explicit type prefix optimized
-for read back with `Invoke-Expression` by e.g. converting system (.Net)
-objects to PSCustomObject objects.
+`-TypePrefix Strict`
+All (embedded) objects and values will have an explicit type
+prefix optimized for read back with `Invoke-Expression` by e.g.
+converting system (.Net) objects to PSCustomObject objects.
 
 `-NewLine`  
 Specifies which characters to use for a new line. The default is defined by
