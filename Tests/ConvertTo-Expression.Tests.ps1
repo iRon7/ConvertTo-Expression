@@ -7,7 +7,7 @@ Function Should-BeEqualTo ($Value2, [Parameter(ValueFromPipeLine = $True)]$Value
 	$Value1 | Should -BeOfType $Value2.GetType().Name
 }
 
-Describe 'ConvertTo-PSON' {
+Describe 'ConvertTo-Expression' {
 	
 	$Version  = $PSVersionTable.PSVersion
 	$TimeSpan = New-TimeSpan -Hour 1 -Minute 25
@@ -42,6 +42,7 @@ Describe 'ConvertTo-PSON' {
 		DateTime  = $DateTime
 		TimeSpan  = $TimeSpan
 		Version   = $Version
+		Script    = {2 * 3}
 		Array     = @("One", "Two", @("Three", "Four"), "Five")
 		HashTable = @{city="New York"; currency="Dollar	(`$)"; postalCode=10021; Etc = @("Three", "Four", "Five")}
 		Ordered   = [Ordered]@{One = 1; Two = 2; Three = 3; Four = 4}
@@ -71,158 +72,153 @@ Describe 'ConvertTo-PSON' {
 
 		It "casts type" {
 			
-			$PSON = $Object | PSON
+			$Expression = $Object | ConvertTo-Expression
 			
-			$PSON | Should -BeOfType [String]
+			$Actual = &$Expression
 			
-			$Test = $PSON | ConvertFrom-PSON
-			
-			$Test.String      | Should -Be $Object.String
-			$Test.Text        | Should -Be $Object.Text
-			$Test.Char        | Should -Be $Object.Char
-			$Test.Byte        | Should -Be $Object.Byte
-			$Test.Int         | Should -Be $Object.Int
-			$Test.Long        | Should -Be $Object.Long
-			$Test.Null        | Should -Be $Object.Null
-			$Test.Booleans[0] | Should -Be $Object.Booleans[0]
-			$Test.Booleans[1] | Should -Be $Object.Booleans[1]
-			$Test.Decimal     | Should -Be $Object.Decimal
-			$Test.Single      | Should -Be $Object.Single
-			$Test.Double      | Should -Be $Object.Double
-			$Test.Long        | Should -Be $Object.Long
-			$Test.DateTime    | Should -Be $DateTime
-			$Test.TimeSpan    | Should -Be $TimeSpan
-			$Test.Version     | Should -Be $Version
-			$Test.Array       | Should -Be $Object.Array
-			$Test.HashTable.City       | Should -Be $Object.HashTable.City
-			$Test.HashTable.Currency   | Should -Be $Object.HashTable.Currency
-			$Test.HashTable.PostalCode | Should -Be $Object.HashTable.PostalCode
-			$Test.HashTable.Etc        | Should -Be $Object.HashTable.Etc
-			$Test.Ordered.One          | Should -Be $Object.Ordered.One
-			$Test.Ordered.Two          | Should -Be $Object.Ordered.Two
-			$Test.Ordered.Three        | Should -Be $Object.Ordered.Three
-			$Test.Ordered.Four         | Should -Be $Object.Ordered.Four
-			$Test.Object.Name          | Should -Be $Object.Object.Name
-			$Test.Object.Value         | Should -Be $Object.Object.Value
-			$Test.Object.Group         | Should -Be $Object.Object.Group
-			$Test.DataTable.Name[0]    | Should -Be $Object.DataTable.Name[0]
-			$Test.DataTable.Name[1]    | Should -Be $Object.DataTable.Name[1]
+			$Actual.String      | Should -Be $Object.String
+			$Actual.Text        | Should -Be $Object.Text
+			$Actual.Char        | Should -Be $Object.Char
+			$Actual.Byte        | Should -Be $Object.Byte
+			$Actual.Int         | Should -Be $Object.Int
+			$Actual.Long        | Should -Be $Object.Long
+			$Actual.Null        | Should -Be $Object.Null
+			$Actual.Booleans[0] | Should -Be $Object.Booleans[0]
+			$Actual.Booleans[1] | Should -Be $Object.Booleans[1]
+			$Actual.Decimal     | Should -Be $Object.Decimal
+			$Actual.Single      | Should -Be $Object.Single
+			$Actual.Double      | Should -Be $Object.Double
+			$Actual.Long        | Should -Be $Object.Long
+			$Actual.DateTime    | Should -Be $DateTime
+			$Actual.TimeSpan    | Should -Be $TimeSpan
+			$Actual.Version     | Should -Be $Version
+			&$Actual.Script     | Should -Be (&$Object.Script)
+			$Actual.Array       | Should -Be $Object.Array
+			$Actual.HashTable.City       | Should -Be $Object.HashTable.City
+			$Actual.HashTable.Currency   | Should -Be $Object.HashTable.Currency
+			$Actual.HashTable.PostalCode | Should -Be $Object.HashTable.PostalCode
+			$Actual.HashTable.Etc        | Should -Be $Object.HashTable.Etc
+			$Actual.Ordered.One          | Should -Be $Object.Ordered.One
+			$Actual.Ordered.Two          | Should -Be $Object.Ordered.Two
+			$Actual.Ordered.Three        | Should -Be $Object.Ordered.Three
+			$Actual.Ordered.Four         | Should -Be $Object.Ordered.Four
+			$Actual.Object.Name          | Should -Be $Object.Object.Name
+			$Actual.Object.Value         | Should -Be $Object.Object.Value
+			$Actual.Object.Group         | Should -Be $Object.Object.Group
+			$Actual.DataTable.Name[0]    | Should -Be $Object.DataTable.Name[0]
+			$Actual.DataTable.Name[1]    | Should -Be $Object.DataTable.Name[1]
 		}
-
+		
 		It "compress" {
 			
-			$PSON = $Object | PSON -Expand -1
+			$Expression = $Object | ConvertTo-Expression -Expand -1
 			
-			$PSON | Should -BeOfType [String]
+			$Actual = &$Expression
 			
-			$Test = $PSON | ConvertFrom-PSON
-			
-			$Test.String      | Should -Be $Object.String
-			$Test.Text        | Should -Be $Object.Text
-			$Test.Char        | Should -Be $Object.Char
-			$Test.Byte        | Should -Be $Object.Byte
-			$Test.Int         | Should -Be $Object.Int
-			$Test.Long        | Should -Be $Object.Long
-			$Test.Null        | Should -Be $Object.Null
-			$Test.Booleans[0] | Should -Be $Object.Booleans[0]
-			$Test.Booleans[1] | Should -Be $Object.Booleans[1]
-			$Test.Decimal     | Should -Be $Object.Decimal
-			$Test.Single      | Should -Be $Object.Single
-			$Test.Double      | Should -Be $Object.Double
-			$Test.Long        | Should -Be $Object.Long
-			$Test.DateTime    | Should -Be $DateTime
-			$Test.TimeSpan    | Should -Be $TimeSpan
-			$Test.Version     | Should -Be $Version
-			$Test.Array       | Should -Be $Object.Array
-			$Test.HashTable.City       | Should -Be $Object.HashTable.City
-			$Test.HashTable.Currency   | Should -Be $Object.HashTable.Currency
-			$Test.HashTable.PostalCode | Should -Be $Object.HashTable.PostalCode
-			$Test.HashTable.Etc        | Should -Be $Object.HashTable.Etc
-			$Test.Ordered.One          | Should -Be $Object.Ordered.One
-			$Test.Ordered.Two          | Should -Be $Object.Ordered.Two
-			$Test.Ordered.Three        | Should -Be $Object.Ordered.Three
-			$Test.Ordered.Four         | Should -Be $Object.Ordered.Four
-			$Test.Object.Name          | Should -Be $Object.Object.Name
-			$Test.Object.Value         | Should -Be $Object.Object.Value
-			$Test.Object.Group         | Should -Be $Object.Object.Group
-			$Test.DataTable.Name[0]    | Should -Be $Object.DataTable.Name[0]
-			$Test.DataTable.Name[1]    | Should -Be $Object.DataTable.Name[1]
+			$Actual.String      | Should -Be $Object.String
+			$Actual.Text        | Should -Be $Object.Text
+			$Actual.Char        | Should -Be $Object.Char
+			$Actual.Byte        | Should -Be $Object.Byte
+			$Actual.Int         | Should -Be $Object.Int
+			$Actual.Long        | Should -Be $Object.Long
+			$Actual.Null        | Should -Be $Object.Null
+			$Actual.Booleans[0] | Should -Be $Object.Booleans[0]
+			$Actual.Booleans[1] | Should -Be $Object.Booleans[1]
+			$Actual.Decimal     | Should -Be $Object.Decimal
+			$Actual.Single      | Should -Be $Object.Single
+			$Actual.Double      | Should -Be $Object.Double
+			$Actual.Long        | Should -Be $Object.Long
+			$Actual.DateTime    | Should -Be $DateTime
+			$Actual.TimeSpan    | Should -Be $TimeSpan
+			$Actual.Version     | Should -Be $Version
+			&$Actual.Script     | Should -Be (&$Object.Script)
+			$Actual.Array       | Should -Be $Object.Array
+			$Actual.HashTable.City       | Should -Be $Object.HashTable.City
+			$Actual.HashTable.Currency   | Should -Be $Object.HashTable.Currency
+			$Actual.HashTable.PostalCode | Should -Be $Object.HashTable.PostalCode
+			$Actual.HashTable.Etc        | Should -Be $Object.HashTable.Etc
+			$Actual.Ordered.One          | Should -Be $Object.Ordered.One
+			$Actual.Ordered.Two          | Should -Be $Object.Ordered.Two
+			$Actual.Ordered.Three        | Should -Be $Object.Ordered.Three
+			$Actual.Ordered.Four         | Should -Be $Object.Ordered.Four
+			$Actual.Object.Name          | Should -Be $Object.Object.Name
+			$Actual.Object.Value         | Should -Be $Object.Object.Value
+			$Actual.Object.Group         | Should -Be $Object.Object.Group
+			$Actual.DataTable.Name[0]    | Should -Be $Object.DataTable.Name[0]
+			$Actual.DataTable.Name[1]    | Should -Be $Object.DataTable.Name[1]
 		}
 		
 		It "converts strict type" {
 			
-			$PSON = $Object | PSON -Type Strict
+			$Expression = $Object | ConvertTo-Expression -Type Strict
 			
-			$PSON | Should -BeOfType [String]
+			$Actual = &$Expression
 			
-			$Test = $PSON | ConvertFrom-PSON
-			
-			$Test.String      | Should-BeEqualTo $Object.String
-			$Test.Text        | Should-BeEqualTo $Object.Text
-			$Test.Char        | Should-BeEqualTo $Object.Char
-			$Test.Byte        | Should-BeEqualTo $Object.Byte
-			$Test.Int         | Should-BeEqualTo $Object.Int
-			$Test.Long        | Should-BeEqualTo $Object.Long
-			$Test.Null        | Should -Be $Object.Null
-			$Test.Booleans[0] | Should-BeEqualTo $Object.Booleans[0]
-			$Test.Booleans[1] | Should-BeEqualTo $Object.Booleans[1]
-			$Test.Decimal     | Should-BeEqualTo $Object.Decimal
-			$Test.Single      | Should-BeEqualTo $Object.Single
-			$Test.Double      | Should-BeEqualTo $Object.Double
-			$Test.Long        | Should-BeEqualTo $Object.Long
-			$Test.DateTime    | Should-BeEqualTo $DateTime
-			$Test.TimeSpan    | Should-BeEqualTo $TimeSpan
-			$Test.Version     | Should-BeEqualTo $Version
-			$Test.Array       | Should -Be $Object.Array
-			$Test.HashTable.City       | Should -Be $Object.HashTable.City
-			$Test.HashTable.Currency   | Should -Be $Object.HashTable.Currency
-			$Test.HashTable.PostalCode | Should -Be $Object.HashTable.PostalCode
-			$Test.HashTable.Etc        | Should -Be $Object.HashTable.Etc
-			$Test.Ordered.One          | Should -Be $Object.Ordered.One
-			$Test.Ordered.Two          | Should -Be $Object.Ordered.Two
-			$Test.Ordered.Three        | Should -Be $Object.Ordered.Three
-			$Test.Ordered.Four         | Should -Be $Object.Ordered.Four
-			$Test.Object.Name          | Should -Be $Object.Object.Name
-			$Test.Object.Value         | Should -Be $Object.Object.Value
-			$Test.Object.Group         | Should -Be $Object.Object.Group
-			$Test.DataTable.Name[0]    | Should -Be $Object.DataTable.Name[0]
-			$Test.DataTable.Name[1]    | Should -Be $Object.DataTable.Name[1]
-			$Test.XML                  | Should -BeOfType [System.Xml.XmlDocument]
+			$Actual.String      | Should-BeEqualTo $Object.String
+			$Actual.Text        | Should-BeEqualTo $Object.Text
+			$Actual.Char        | Should-BeEqualTo $Object.Char
+			$Actual.Byte        | Should-BeEqualTo $Object.Byte
+			$Actual.Int         | Should-BeEqualTo $Object.Int
+			$Actual.Long        | Should-BeEqualTo $Object.Long
+			$Actual.Null        | Should -Be $Object.Null
+			$Actual.Booleans[0] | Should-BeEqualTo $Object.Booleans[0]
+			$Actual.Booleans[1] | Should-BeEqualTo $Object.Booleans[1]
+			$Actual.Decimal     | Should-BeEqualTo $Object.Decimal
+			$Actual.Single      | Should-BeEqualTo $Object.Single
+			$Actual.Double      | Should-BeEqualTo $Object.Double
+			$Actual.Long        | Should-BeEqualTo $Object.Long
+			$Actual.DateTime    | Should-BeEqualTo $DateTime
+			$Actual.TimeSpan    | Should-BeEqualTo $TimeSpan
+			$Actual.Version     | Should-BeEqualTo $Version
+			&$Actual.Script     | Should-BeEqualTo (&$Object.Script)
+			$Actual.Array       | Should -Be $Object.Array
+			$Actual.HashTable.City       | Should -Be $Object.HashTable.City
+			$Actual.HashTable.Currency   | Should -Be $Object.HashTable.Currency
+			$Actual.HashTable.PostalCode | Should -Be $Object.HashTable.PostalCode
+			$Actual.HashTable.Etc        | Should -Be $Object.HashTable.Etc
+			$Actual.Ordered.One          | Should -Be $Object.Ordered.One
+			$Actual.Ordered.Two          | Should -Be $Object.Ordered.Two
+			$Actual.Ordered.Three        | Should -Be $Object.Ordered.Three
+			$Actual.Ordered.Four         | Should -Be $Object.Ordered.Four
+			$Actual.Object.Name          | Should -Be $Object.Object.Name
+			$Actual.Object.Value         | Should -Be $Object.Object.Value
+			$Actual.Object.Group         | Should -Be $Object.Object.Group
+			$Actual.DataTable.Name[0]    | Should -Be $Object.DataTable.Name[0]
+			$Actual.DataTable.Name[1]    | Should -Be $Object.DataTable.Name[1]
+			$Actual.XML                  | Should -BeOfType [System.Xml.XmlDocument]
 		}
 		
-		It "convert calendar to PSON" {
+		It "convert calendar to ConvertTo-Expression" {
 		
-			$Calandar = (Get-UICulture).Calendar | ConvertTo-Pson
+			$Calendar = (Get-UICulture).Calendar
 			
-			$PSON = $Calandar | PSON
+			$Expression = $Calendar | ConvertTo-Expression
 			
-			$PSON | Should -BeOfType [String]
-			
-			$Test = $PSON | ConvertFrom-PSON
+			$Actual = &$Expression
 		
-			$Test.AlgorithmType        | Should -Be $Calendar.AlgorithmType
-			$Test.CalendarType         | Should -Be $Calendar.CalendarType
-			$Test.Eras                 | Should -Be $Calendar.Eras
-			$Test.IsReadOnly           | Should -Be $Calendar.IsReadOnly
-			$Test.MaxSupportedDateTime | Should -Be $Calendar.MaxSupportedDateTime
-			$Test.MinSupportedDateTime | Should -Be $Calendar.MinSupportedDateTime
-			$Test.TwoDigitYearMax      | Should -Be $Calendar.TwoDigitYearMax
+			$Actual.AlgorithmType        | Should -Be $Calendar.AlgorithmType
+			$Actual.CalendarType         | Should -Be $Calendar.CalendarType
+			$Actual.Eras                 | Should -Be $Calendar.Eras
+			$Actual.IsReadOnly           | Should -Be $Calendar.IsReadOnly
+			$Actual.MaxSupportedDateTime | Should -Be $Calendar.MaxSupportedDateTime
+			$Actual.MinSupportedDateTime | Should -Be $Calendar.MinSupportedDateTime
+			$Actual.TwoDigitYearMax      | Should -Be $Calendar.TwoDigitYearMax
 			
 		}
 
-		It "compress PSON" {
+		It "compress ConvertTo-Expression" {
 		
 			$User = @{Account="User01";Domain="Domain01";Admin=$True}
 			
-			$PSON = $User | PSON -Expand -1
+			$Expression = $User | ConvertTo-Expression -Expand -1
 			
-			$PSON.Contains(" ") | Should -Be $False
+			"$Expression".Contains(" ") | Should -Be $False
 			
-			$Test = $PSON | ConvertFrom-PSON
+			$Actual = &$Expression
 		
-			$Test.Account | Should-BeEqualTo $User.Account
-			$Test.Domain  | Should-BeEqualTo $User.Domain
-			$Test.Admin   | Should-BeEqualTo $User.Admin
+			$Actual.Account | Should-BeEqualTo $User.Account
+			$Actual.Domain  | Should-BeEqualTo $User.Domain
+			$Actual.Admin   | Should-BeEqualTo $User.Admin
 			
 		}
 
@@ -230,27 +226,25 @@ Describe 'ConvertTo-PSON' {
 		
 			$Date = Get-Date | Select-Object -Property *
 			
-			$PSON = $Date | PSON 
+			$Expression = $Date | ConvertTo-Expression 
 			
-			$PSON | Should -BeOfType [String]
-			
-			$Test = $PSON | ConvertFrom-PSON
+			$Actual = &$Expression
 
-			$Test.Date        | Should -Be $Date.Date
-			$Test.DateTime    | Should -Be $Date.DateTime
-			$Test.Day         | Should -Be $Date.Day
-			$Test.DayOfWeek   | Should -Be $Date.DayOfWeek
-			$Test.DayOfYear   | Should -Be $Date.DayOfYear
-			$Test.DisplayHint | Should -Be $Date.DisplayHint
-			$Test.Hour        | Should -Be $Date.Hour
-			$Test.Kind        | Should -Be $Date.Kind
-			$Test.Millisecond | Should -Be $Date.Millisecond
-			$Test.Minute      | Should -Be $Date.Minute
-			$Test.Month       | Should -Be $Date.Month
-			$Test.Second      | Should -Be $Date.Second
-			$Test.Ticks       | Should -Be $Date.Ticks
-			$Test.TimeOfDay   | Should -Be $Date.TimeOfDay
-			$Test.Year        | Should -Be $Date.Year
+			$Actual.Date        | Should -Be $Date.Date
+			$Actual.DateTime    | Should -Be $Date.DateTime
+			$Actual.Day         | Should -Be $Date.Day
+			$Actual.DayOfWeek   | Should -Be $Date.DayOfWeek
+			$Actual.DayOfYear   | Should -Be $Date.DayOfYear
+			$Actual.DisplayHint | Should -Be $Date.DisplayHint
+			$Actual.Hour        | Should -Be $Date.Hour
+			$Actual.Kind        | Should -Be $Date.Kind
+			$Actual.Millisecond | Should -Be $Date.Millisecond
+			$Actual.Minute      | Should -Be $Date.Minute
+			$Actual.Month       | Should -Be $Date.Month
+			$Actual.Second      | Should -Be $Date.Second
+			$Actual.Ticks       | Should -Be $Date.Ticks
+			$Actual.TimeOfDay   | Should -Be $Date.TimeOfDay
+			$Actual.Year        | Should -Be $Date.Year
 
 		}
 
@@ -258,13 +252,11 @@ Describe 'ConvertTo-PSON' {
 		
 			$WinInitProcess = Get-Process WinInit
 
-			$PSON = $WinInitProcess | PSON 
+			$Expression = $WinInitProcess | ConvertTo-Expression 
 			
-			$PSON | Should -BeOfType [String]
+			$Actual = &$Expression
 			
-			$Test = $PSON | ConvertFrom-PSON
-			
-			$Test.ProcessName | Should-BeEqualTo $WinInitProcess.ProcessName
+			$Actual.ProcessName | Should-BeEqualTo $WinInitProcess.ProcessName
 			
 		}
 	}
