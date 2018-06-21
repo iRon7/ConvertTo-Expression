@@ -21,7 +21,7 @@ Convert a Calendar object to a PowerShell expression:
 ```powershell
 PS C:\> $Calendar = (Get-UICulture).Calendar | ConvertTo-Expression
 
-PS C:\ $Calendar
+PS C:\> $Calendar
 
 [PSCustomObject]@{
 		'AlgorithmType' = 'SolarCalendar'
