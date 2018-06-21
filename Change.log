@@ -1,4 +1,4 @@
-Version  [DateTime] Author       Comments
+Version  DateTime   Author       Comments
 -------- ---------- ------------ --------
 01.00.00 2017-05-31 Ronald Bode  First releases
 02.10.02 2017-11-21 Ronald Bode  Recode along with GetEnumerator.OverloadDefinitions
