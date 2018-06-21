@@ -1,78 +1,81 @@
 # ConvertTo-Expression
 Serializes an object to a PowerShell expression
 
-The `ConvertTo-Expression` (alias `ConvertTo-Pson`) cmdlet converts any object to a
-string in PowerShell Object Notation (PSON) expression. The properties are converted
-to field names, the field values are converted to property values, and the methods
-are removed. You can  use the native `Invoke-Expression` (aliased `ConvertFrom-Pson`)
-cmdlet to convert a PSON expression back to a PowerShell object, which is easily
-managed in Windows PowerShell.
+The ConvertTo-Expression cmdlet converts (serializes) an object to
+a PowerShell expression. The object can be stored in a variable,
+file or any other common storage for later use or to be ported to
+another system.
+
+## Convert from expression
+An expression can be restored to an object by preceding it with an
+ampersand (&). An expression that is casted to a string can be
+restored to an object using the native Invoke-Expression cmdlet.
+An expression that is stored in a PowerShell (.ps1) file might also
+be directly invoked by the PowerShell dot-sourcing technique.
+
 
 ## Examples
 
 Convert a Calendar object to a PowerShell expression:
 
 ```powershell
-PS C:\>(Get-UICulture).Calendar | ConvertTo-Expression
+PS C:\> $Calendar = (Get-UICulture).Calendar | ConvertTo-Expression
+
+PS C:\ $Calendar
 
 [PSCustomObject]@{
-	'AlgorithmType' = 'SolarCalendar'
-	'CalendarType' = 'Localized'
-	'Eras' = 1
-	'IsReadOnly' = $False
-	'MaxSupportedDateTime' = [DateTime]'9999-12-31T23:59:59.9999999'
-	'MinSupportedDateTime' = [DateTime]'0001-01-01T00:00:00.0000000'
-	'TwoDigitYearMax' = 2029
+		'AlgorithmType' = 'SolarCalendar'
+		'CalendarType' = 'Localized'
+		'Eras' = 1
+		'IsReadOnly' = $False
+		'MaxSupportedDateTime' = [DateTime]'9999-12-31T23:59:59.9999999'
+		'MinSupportedDateTime' = [DateTime]'0001-01-01T00:00:00.0000000'
+		'TwoDigitYearMax' = 2029
 }
+
+PS C:\> &$Calendar
+
+AlgorithmType        : SolarCalendar
+CalendarType         : Localized
+Eras                 : 1
+IsReadOnly           : False
+MaxSupportedDateTime : 9999-12-31 11:59:59 PM
+MinSupportedDateTime : 0001-01-01 12:00:00 AM
+TwoDigitYearMax      : 2029
 ```
+
+Save an (date) object in a file and restore to be able to restore it later:
+
+```powershell
+PS C:\>Get-Date | Select-Object -Property * | ConvertTo-Expression | Out-File .\Now.ps1
+
+PS C:\>$Now = .\Now.ps1	# $Now = Get-Content .\Now.Ps1 -Raw | Invoke-Expression
+
+PS C:\>$Now
+
+Date        : 1963-10-07 12:00:00 AM
+DateTime    : Monday, October 7, 1963 10:47:00 PM
+Day         : 7
+DayOfWeek   : Monday
+DayOfYear   : 280
+DisplayHint : DateTime
+Hour        : 22
+Kind        : Local
+Millisecond : 0
+Minute      : 22
+Month       : 1
+Second      : 0
+Ticks       : 619388596200000000
+TimeOfDay   : 22:47:00
+Year        : 1963
+```
+
 Compress the PSON output:
 
 ```powershell
 PS C:\>@{Account="User01";Domain="Domain01";Admin="True"} | ConvertTo-Expression -Expand -1	
 
 @{'Admin'='True';'Account'='User01';'Domain'='Domain01'}
-```
-
-Convert an object to a PSON expression and back to a PowerShell expression:
-
-```powershell
-PS C:\>Get-Date | Select-Object -Property * | ConvertTo-Expression
-
-[PSCustomObject]@{
-	'Date' = [DateTime]'2018-01-09T00:00:00.0000000+01:00'
-	'DateTime' = 'Tuesday, January 9, 2018 7:22:57 PM'
-	'Day' = 9
-	'DayOfWeek' = 'Tuesday'
-	'DayOfYear' = 9
-	'DisplayHint' = 'DateTime'
-	'Hour' = 19
-	'Kind' = 'Local'
-	'Millisecond' = 671
-	'Minute' = 22
-	'Month' = 1
-	'Second' = 57
-	'Ticks' = 636511225776716485
-	'TimeOfDay' = [TimeSpan]'19:22:57.6716485'
-	'Year' = 2018
-}
-
-PS C:\>Get-Date | Select-Object -Property * | ConvertTo-Expression | Invoke-Expression
-
-Date        : 2018-01-09 12:00:00 AM
-DateTime    : Tuesday, January 9, 2018 7:27:43 PM
-Day         : 9
-DayOfWeek   : Tuesday
-DayOfYear   : 9
-DisplayHint : DateTime
-Hour        : 19
-Kind        : Local
-Millisecond : 76
-Minute      : 27
-Month       : 1
-Second      : 43
-Ticks       : 636511228630764893
-TimeOfDay   : 19:27:43.0764893
-Year        : 2018
 ```
 
 Convert the WinInit Process to a PSON expression:
