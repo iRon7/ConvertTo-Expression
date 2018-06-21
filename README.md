@@ -6,7 +6,7 @@ a PowerShell expression. The object can be stored in a variable,
 file or any other common storage for later use or to be ported to
 another system.
 
-*Convert from expression*
+**Convert from expression**  
 An expression can be restored to an object by preceding it with an
 ampersand (`&`). An expression that is casted to a string can be
 restored to an object using the native `Invoke-Expression` cmdlet.
