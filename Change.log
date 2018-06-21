@@ -25,4 +25,4 @@ Version  DateTime   Author       Comments
 2.3.0    2018-01-27 Ronald Bode  Renamed solution to: ConvertTo-Expression
 2.3.1    2018-01-27 Ronald Bode  Changed ConvertTo-PSON to ConvertTo-Expression in Iterate
 2.4.0    2018-06-19 Ronald Bode  Output an expression [ScriptBlock] rather than a [String]
-2.4.1    2018-06-21 Ronald Bode  Support for embedded ScriptBlocks
+2.4.2    2018-06-21 Ronald Bode  Support for embedded ScriptBlocks
