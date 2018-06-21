@@ -1,6 +1,6 @@
 |Version |Date      |Author      |Comments|
 |--------|----------|------------|--------|
-|01.xx.xx|2017&#8209;05&#8209;31|Ronald&nbsp;Bode |First releases|
+|01.00.00|2017-05-31|Ronald Bode |First releases|
 |02.10.02|2017-11-21|Ronald Bode |Recode along with GetEnumerator.OverloadDefinitions|
 |02.11.10|2017-12-11|Ronald Bode |Added support for [DataTable]|
 |        |          |            |New Embed function|
@@ -12,14 +12,17 @@
 |02.12.05|2017-12-20|Ronald Bode |Resolved cast bug|
 |02.12.06|2017-12-23|Ronald Bode |Changed -SetType to -Type|
 |02.12.07|2017-12-23|Ronald Bode |Added -CropText|
-|02.12.08|2017-01-13|Ronald Bode |Improved performance by preventing extensive string manipulation
-|02.12.09|2017-01-15|Ronald Bode |Changed -CropText to -ClipText|
+|02.12.08|2018-01-13|Ronald Bode |Improved performance by preventing extensive string manipulation
+|02.12.09|2018-01-15|Ronald Bode |Changed -CropText to -ClipText|
 |        |          |            |Changed -Type to -TypePrefix|
 |        |          |            |Add support for multi-line strings (here string)|
 |        |          |            |Removed -ClipText|
-|   2.2.2|2017-01-18|Ronald Bode |Formatted for PowerShell Gallery and GitHub|
-|   2.2.3|2017-01-19|Ronald Bode |Removed [Parameter(DontShow)] as it is not downwards compatible with PowerShell 2|
-|   2.2.4|2017-01-20|Ronald Bode |Added ICONURI|
-|   2.2.6|2017-01-20|Ronald Bode |Corrected ICONURI|
-|   2.2.7|2017-01-27|Ronald Bode |Renamed function to: ConvertTo-Expression|
-|   2.3.0|2017-01-27|Ronald Bode |Renamed solution to: ConvertTo-Expression|
+|   2.2.2|2018-01-18|Ronald Bode |Formatted for PowerShell Gallery and GitHub|
+|   2.2.3|2018-01-19|Ronald Bode |Removed [Parameter(DontShow)] as it is not downwards compatible with PowerShell 2|
+|   2.2.4|2018-01-20|Ronald Bode |Added ICONURI|
+|   2.2.6|2018-01-20|Ronald Bode |Corrected ICONURI|
+|   2.2.7|2018-01-27|Ronald Bode |Renamed function to: ConvertTo-Expression|
+|   2.3.0|2018-01-27|Ronald Bode |Renamed solution to: ConvertTo-Expression|
+|   2.3.1|2018-01-27|Ronald Bode |Changed ConvertTo-PSON to ConvertTo-Expression in Iterate|
+|   2.4.0|2018-06-19|Ronald Bode |Output an expression [ScriptBlock] rather than a [String]|
+|   2.4.1|2018-06-21|Ronald Bode |Support for embedded ScriptBlocks|
