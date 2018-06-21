@@ -1,5 +1,5 @@
 <#PSScriptInfo
-.VERSION 2.4.1
+.VERSION 2.4.2
 .GUID 5f167621-6abe-4153-a26c-f643e1716720
 .AUTHOR Ronald Bode (iRon)
 .DESCRIPTION Serializes an object to a PowerShell expression (PSON, PowerShell Object Notation).
@@ -105,7 +105,7 @@ Function ConvertTo-Expression {
 
 			PS C:\> $Calendar = (Get-UICulture).Calendar | ConvertTo-Expression
 			
-			PS C:\ $Calendar
+			PS C:\> $Calendar
 			
 			[PSCustomObject]@{
 					'AlgorithmType' = 'SolarCalendar'
