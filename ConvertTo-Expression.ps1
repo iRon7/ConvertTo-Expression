@@ -1,5 +1,5 @@
 <#PSScriptInfo
-.VERSION 2.4.2
+.VERSION 2.4.6
 .GUID 5f167621-6abe-4153-a26c-f643e1716720
 .AUTHOR Ronald Bode (iRon)
 .DESCRIPTION Serializes an object to a PowerShell expression (PSON, PowerShell Object Notation).
@@ -176,41 +176,41 @@ Function ConvertTo-Expression {
 	$PipeLine = $Input | ForEach-Object {$_}; If ($PipeLine) {$InputObject = $PipeLine}
 	Function Iterate ($Value) {ConvertTo-Expression @(,$Value) $Depth $Expand $Indentation $IndentChar $TypePrefix $NewLine ($Iteration + 1)}
 	Function Embed ($List, $Dictionary) {If ($Iteration -ge $Depth) {If ($Null -ne $Dictionary) {Return "@{}"} Else {Return "@()"}}
-		$Items = ForEach ($Key in $List) {If ($Null -ne $Dictionary) {"'$Key'$Space=$Space" + (Iterate $Dictionary.$Key)} Else {Iterate $Key}}
+		$Items = ForEach ($Key in $List) {If ($Null -ne $Dictionary) {"'$Key'$Space=$Space" + (Iterate @(,$Dictionary.$Key))} Else {Iterate @(,$Key)}}
 		$Open, $Join, $Separator, $Close = If ($Null -ne $Dictionary) {"@{", ";$Space", "$LineUp$Tab", "}"} Else {"@(", ",$Space", ",$LineUp$Tab", ")"}
 		$Open + (&{If (($Iteration -ge $Expand) -or (@($Items).Count -le 1)) {$Items -Join $Join} Else {"$LineUp$Tab$($Items -Join $Separator)$LineUp"}}) + $Close
 	}
 	$Object = If (@($InputObject).Count -eq 1) {@($InputObject)[0]} Else {$InputObject}
-	If ($Null -eq $Object) {"`$Null"} Else {
+	$Expression = If ($Null -eq $Object) {"`$Null"} Else {
 		$Space = If ($Iteration -gt $Expand) {""} Else {" "}; $Tab = $IndentChar * $Indentation; $LineUp = "$NewLine$($Tab * $Iteration)"
-		$Type = $Object.GetType().Name; $Cast = $Null; $Enumerator = $Object.GetEnumerator.OverloadDefinitions
-		$Expression = If ($Object -is [Boolean]) {If ($Object) {'$True'} Else {'$False'}}
+		$Type = $Object.GetType().Name; $Parse = $Type; $Cast = $Null; $Enumerator = $Object.GetEnumerator.OverloadDefinitions
+		$Pson = If ($Object -is [Boolean]) {If ($Object) {'$True'} Else {'$False'}}
 		ElseIf ($Object -is [Char]) {$Cast = $Type; "'$Object'"}
 		ElseIf ($Object -is [String]) {If ($Object -Match "[`r`n]") {"@'$NewLine$Object$NewLine'@$NewLine"} Else {"'$($Object.Replace('''', ''''''))'"}}
 		ElseIf ($Object -is [DateTime]) {$Cast = $Type; "'$($Object.ToString('o'))'"}
 		ElseIf ($Object -is [TimeSpan] -or $Object -is [Version]) {$Cast = $Type; "'$Object'"}
 		ElseIf ($Object -is [ScriptBlock]) {"{$Object}"}
-		ElseIf ($Object -is [Enum]) {$Type = "String"; "'$($Object)'"}
+		ElseIf ($Object -is [Enum]) {$Parse = "String"; "'$($Object)'"}
 		ElseIf ($Object -is [Xml]) {$Cast = "Xml"; $SW = New-Object System.IO.StringWriter; $XW = New-Object System.Xml.XmlTextWriter $SW
 			$XW.Formatting = If ($Level -gt $Expand) {"None"} Else {"Indented"}; $XW.Indentation = $Indentation; $XW.IndentChar = $IndentChar
 			$Object.WriteContentTo($XW); If ($Level -gt $Expand) {"'$SW'"} Else {"@'$NewLine$SW$NewLine'@$NewLine"}}
-		ElseIf ($Object.GetType().Name -eq "DictionaryEntry" -or $Type -like "KeyValuePair*") {$Type = "Hashtable"; Embed $Object.Key @{$Object.Key = $Object.Value}}
-		ElseIf ($Object.GetType().Name -eq "OrderedDictionary") {$Type = "Hashtable"; $Cast = "Ordered"; Embed $Object.Keys $Object}
-		ElseIf ($Enumerator -match "[\W]IDictionaryEnumerator[\W]") {$Type = "Hashtable"; Embed $Object.Keys $Object}
-		ElseIf ($Enumerator -match "[\W]IEnumerator[\W]" -or $Object.GetType().Name -eq "DataTable") {$Type = "Array"; Embed $Object}
+		ElseIf ($Object.GetType().Name -eq "DictionaryEntry" -or $Type -like "KeyValuePair*") {$Parse = "Hashtable"; Embed $Object.Key @{$Object.Key = $Object.Value}}
+		ElseIf ($Object.GetType().Name -eq "OrderedDictionary") {$Cast = "Ordered"; Embed $Object.Keys $Object}
+		ElseIf ($Enumerator -match "[\W]IDictionaryEnumerator[\W]") {$Parse = "Hashtable"; Embed $Object.Keys $Object}
+		ElseIf ($Enumerator -match "[\W]IEnumerator[\W]" -or $Object.GetType().Name -eq "DataTable") {$Parse = "Array"; Embed $Object}
 		Else {$Property = $Object | Get-Member -Type Property; If (!$Property) {$Property = $Object | Get-Member -Type NoteProperty}
 			$Names = ForEach ($Name in ($Property | Select-Object -Expand "Name")) {$Object.PSObject.Properties |
 				Where-Object {$_.Name -eq $Name -and $_.IsGettable} | Select-Object -Expand "Name"}
-			If ($Property) {$Type = "PSCustomObject"; $Cast = $Type; Embed $Names $Object} Else {$Object}
+			If ($Property) {$Cast = "PSCustomObject"; Embed $Names $Object} Else {$Object}
 		}
-		$Expression = Switch ($TypePrefix) {
-			'None'  	{"$Expression"}
-			'Native'	{"[$($Object.GetType().Name)]$Expression"}
-			'Cast'  	{If ($Cast) {"[$Cast]$Expression"} Else {"$Expression"}}
-			'Strict'	{If ($Cast) {"[$Cast]$Expression"} Else {"[$Type]$Expression"}}
+		Switch ($TypePrefix) {
+			'None'  	{"$Pson"}
+			'Native'	{"[$Type]$Pson"}
+			'Cast'  	{If ($Cast) {"[$Cast]$Pson"} Else {"$Pson"}}
+			'Strict'	{If ($Cast) {"[$Cast]$Pson"} Else {"[$Parse]$Pson"}}
 		}
-		If ($Iteration) {$Expression} Else {[ScriptBlock]::Create($Expression)}
 	}
+	If ($Iteration) {$Expression} Else {[ScriptBlock]::Create($Expression)}
 } Set-Alias pson ConvertTo-Expression; Set-Alias ctex ConvertTo-Expression
 Set-Alias ConvertTo-Pson ConvertTo-Expression -Description "Serializes an object to a PowerShell expression."
 Set-Alias ConvertFrom-Pson  Invoke-Expression -Description "Parses a PowerShell expression to an object."
