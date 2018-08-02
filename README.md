@@ -49,7 +49,7 @@ Save an object in a file and to restore it later:
 ```powershell
 PS C:\>Get-Date | Select-Object -Property * | ConvertTo-Expression | Out-File .\Now.ps1
 
-PS C:\>$Now = .\Now.ps1	# $Now = Get-Content .\Now.Ps1 -Raw | Invoke-Expression
+PS C:\>$Now = .\Now.ps1	# Simular to: $Now = Get-Content .\Now.Ps1 -Raw | Invoke-Expression
 
 PS C:\>$Now
 
