@@ -44,7 +44,7 @@ MinSupportedDateTime : 0001-01-01 12:00:00 AM
 TwoDigitYearMax      : 2029
 ```
 
-Save an object in a file and restore to be able to restore it later:
+Save an object in a file and to restore it later:
 
 ```powershell
 PS C:\>Get-Date | Select-Object -Property * | ConvertTo-Expression | Out-File .\Now.ps1
