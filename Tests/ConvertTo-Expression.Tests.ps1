@@ -28,27 +28,28 @@ Describe 'ConvertTo-Expression' {
 	$DataTable.Rows.Add($DataRow)
 
 	$Object = @{
-		String    = [String]"String"
-		Text      = [String]"Hello`r`nWorld"
-		Char      = [Char]65
-		Byte      = [Byte]66
-		Int       = [Int]67
-		Long      = [Long]68
-		Null      = $Null
-		Booleans  = $False, $True
-		Decimal   = [Decimal]69
-		Single    = [Single]70
-		Double    = [Double]71
-		DateTime  = $DateTime
-		TimeSpan  = $TimeSpan
-		Version   = $Version
-		Script    = {2 * 3}
-		Array     = @("One", "Two", @("Three", "Four"), "Five")
-		HashTable = @{city="New York"; currency="Dollar	(`$)"; postalCode=10021; Etc = @("Three", "Four", "Five")}
-		Ordered   = [Ordered]@{One = 1; Two = 2; Three = 3; Four = 4}
-		Object    = New-Object PSObject -Property @{Name = "One"; Value = 1; Group = @("First", "Last")}
-		DataTable = $DataTable
-		Xml       = [Xml]@"
+		String     = [String]"String"
+		Text       = [String]"Hello`r`nWorld"
+		Char       = [Char]65
+		Byte       = [Byte]66
+		Int        = [Int]67
+		Long       = [Long]68
+		Null       = $Null
+		Booleans   = $False, $True
+		Decimal    = [Decimal]69
+		Single     = [Single]70
+		Double      = [Double]71
+		DateTime   = $DateTime
+		TimeSpan   = $TimeSpan
+		Version    = $Version
+		Script     = {2 * 3}
+		Array      = @("One", "Two", @("Three", "Four"), "Five")
+		EmptyArray = @()
+		HashTable  = @{city="New York"; currency="Dollar	(`$)"; postalCode=10021; Etc = @("Three", "Four", "Five")}
+		Ordered    = [Ordered]@{One = 1; Two = 2; Three = 3; Four = 4}
+		Object     = New-Object PSObject -Property @{Name = "One"; Value = 1; Group = @("First", "Last")}
+		DataTable  = $DataTable
+		Xml        = [Xml]@"
 			<items>
 				<item id="0001" type="donut">
 					<name>Cake</name>
@@ -94,6 +95,7 @@ Describe 'ConvertTo-Expression' {
 			$Actual.Version     | Should -Be $Version
 			&$Actual.Script     | Should -Be (&$Object.Script)
 			$Actual.Array       | Should -Be $Object.Array
+			,$Actual.EmptyArray | Should -BeOfType [Array]
 			$Actual.HashTable.City       | Should -Be $Object.HashTable.City
 			$Actual.HashTable.Currency   | Should -Be $Object.HashTable.Currency
 			$Actual.HashTable.PostalCode | Should -Be $Object.HashTable.PostalCode
@@ -133,6 +135,7 @@ Describe 'ConvertTo-Expression' {
 			$Actual.Version     | Should -Be $Version
 			&$Actual.Script     | Should -Be (&$Object.Script)
 			$Actual.Array       | Should -Be $Object.Array
+			,$Actual.EmptyArray | Should -BeOfType [Array]
 			$Actual.HashTable.City       | Should -Be $Object.HashTable.City
 			$Actual.HashTable.Currency   | Should -Be $Object.HashTable.Currency
 			$Actual.HashTable.PostalCode | Should -Be $Object.HashTable.PostalCode
@@ -172,6 +175,7 @@ Describe 'ConvertTo-Expression' {
 			$Actual.Version     | Should-BeEqualTo $Version
 			&$Actual.Script     | Should-BeEqualTo (&$Object.Script)
 			$Actual.Array       | Should -Be $Object.Array
+			,$Actual.EmptyArray | Should -BeOfType [Array]
 			$Actual.HashTable.City       | Should -Be $Object.HashTable.City
 			$Actual.HashTable.Currency   | Should -Be $Object.HashTable.Currency
 			$Actual.HashTable.PostalCode | Should -Be $Object.HashTable.PostalCode
@@ -247,6 +251,9 @@ Describe 'ConvertTo-Expression' {
 			$Actual.Year        | Should -Be $Date.Year
 
 		}
+	}
+	
+	Context 'Convert system object' {
 
 		It "convert (wininit) process" {
 		
@@ -261,4 +268,3 @@ Describe 'ConvertTo-Expression' {
 		}
 	}
 }
-
