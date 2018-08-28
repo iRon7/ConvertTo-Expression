@@ -1,5 +1,5 @@
 <#PSScriptInfo
-.VERSION 2.4.6
+.VERSION 2.6.0
 .GUID 5f167621-6abe-4153-a26c-f643e1716720
 .AUTHOR Ronald Bode (iRon)
 .DESCRIPTION Serializes an object to a PowerShell expression (PSON, PowerShell Object Notation).
@@ -169,39 +169,43 @@ Function ConvertTo-Expression {
 		Invoke-Expression (Alias ConvertFrom-Pson)
 #>
 	[CmdletBinding()][OutputType([ScriptBlock])]Param (
-		[Parameter(ValueFromPipeLine = $True)][Object[]]$InputObject, [Int]$Depth = 9, [Int]$Expand = 9,
+		[Parameter(ValueFromPipeLine = $True)][Alias('InputObject')]$Object, [Int]$Depth = 9, [Int]$Expand = 9,
 		[Int]$Indentation = 1, [String]$IndentChar = "`t", [ValidateSet("None", "Native", "Cast", "Strict")][String]$TypePrefix = "Cast",
 		[String]$NewLine = [System.Environment]::NewLine, [Int]$Iteration = 0
 	)
-	$PipeLine = $Input | ForEach-Object {$_}; If ($PipeLine) {$InputObject = $PipeLine}
-	Function Iterate ($Value) {ConvertTo-Expression @(,$Value) $Depth $Expand $Indentation $IndentChar $TypePrefix $NewLine ($Iteration + 1)}
+	$PipeLine = $Input | ForEach-Object {$_}; If ($PipeLine) {$Object = $PipeLine}
+	$NumberTypes = @{}; "byte", "int16", "int32", "int64", "sbyte", "uint16", "uint32", "uint64", "float", "double", "decimal" | ForEach-Object {$NumberTypes[$_] = $Null}
+	$TypeAccelerators = @{}; [PSObject].Assembly.GetType("System.Management.Automation.TypeAccelerators")::get.GetEnumerator() | ForEach-Object {$TypeAccelerators[$_.Value] = $_.Key}
+	Function Iterate ($Value) {ConvertTo-Expression $Value $Depth $Expand $Indentation $IndentChar $TypePrefix $NewLine ($Iteration + 1)}
 	Function Embed ($List, $Dictionary) {If ($Iteration -ge $Depth) {If ($Null -ne $Dictionary) {Return "@{}"} Else {Return "@()"}}
-		$Items = ForEach ($Key in $List) {If ($Null -ne $Dictionary) {"'$Key'$Space=$Space" + (Iterate @(,$Dictionary.$Key))} Else {Iterate @(,$Key)}}
+		$Items = ForEach ($Key in $List) {If ($Null -ne $Dictionary) {"'$Key'$Space=$Space" + (Iterate $Dictionary.$Key)} Else {Iterate $Key}}
 		$Open, $Join, $Separator, $Close = If ($Null -ne $Dictionary) {"@{", ";$Space", "$LineUp$Tab", "}"} Else {"@(", ",$Space", ",$LineUp$Tab", ")"}
 		$Open + (&{If (($Iteration -ge $Expand) -or (@($Items).Count -le 1)) {$Items -Join $Join} Else {"$LineUp$Tab$($Items -Join $Separator)$LineUp"}}) + $Close
 	}
-	$Object = If (@($InputObject).Count -eq 1) {@($InputObject)[0]} Else {$InputObject}
 	$Expression = If ($Null -eq $Object) {"`$Null"} Else {
 		$Space = If ($Iteration -gt $Expand) {""} Else {" "}; $Tab = $IndentChar * $Indentation; $LineUp = "$NewLine$($Tab * $Iteration)"
-		$Type = $Object.GetType().Name; $Parse = $Type; $Cast = $Null; $Enumerator = $Object.GetEnumerator.OverloadDefinitions
+		$SystemType = $Object.GetType(); $Type = $TypeAccelerators.$SystemType; If (!$Type) {$Type = $SystemType.FullName}; $Parse = $Type; $Cast = $Null;
+		$Enumerator = $Object.GetEnumerator.OverloadDefinitions
 		$Pson = If ($Object -is [Boolean]) {If ($Object) {'$True'} Else {'$False'}}
-		ElseIf ($Object -is [Char]) {$Cast = $Type; "'$Object'"}
+		ElseIf ($NumberTypes.ContainsKey($Type)) {"$Object"}
 		ElseIf ($Object -is [String]) {If ($Object -Match "[`r`n]") {"@'$NewLine$Object$NewLine'@$NewLine"} Else {"'$($Object.Replace('''', ''''''))'"}}
 		ElseIf ($Object -is [DateTime]) {$Cast = $Type; "'$($Object.ToString('o'))'"}
-		ElseIf ($Object -is [TimeSpan] -or $Object -is [Version]) {$Cast = $Type; "'$Object'"}
-		ElseIf ($Object -is [ScriptBlock]) {"{$Object}"}
-		ElseIf ($Object -is [Enum]) {$Parse = "String"; "'$($Object)'"}
-		ElseIf ($Object -is [Xml]) {$Cast = "Xml"; $SW = New-Object System.IO.StringWriter; $XW = New-Object System.Xml.XmlTextWriter $SW
+		ElseIf ($Object -is [Version]) {$Cast = $Type; "'$Object'"}
+		ElseIf ($Object -is [ScriptBlock]) {"{$Object$NewLine}"}
+		ElseIf ($Object -is [RuntimeTypeHandle]) {$Object.Value}
+		ElseIf ($Object -is [IntPtr]) {$Cast = $Type; "$Object"}
+		ElseIf ($Object -is [Xml]) {$Cast = $Type; $SW = New-Object System.IO.StringWriter; $XW = New-Object System.Xml.XmlTextWriter $SW
 			$XW.Formatting = If ($Level -gt $Expand) {"None"} Else {"Indented"}; $XW.Indentation = $Indentation; $XW.IndentChar = $IndentChar
 			$Object.WriteContentTo($XW); If ($Level -gt $Expand) {"'$SW'"} Else {"@'$NewLine$SW$NewLine'@$NewLine"}}
-		ElseIf ($Object.GetType().Name -eq "DictionaryEntry" -or $Type -like "KeyValuePair*") {$Parse = "Hashtable"; Embed $Object.Key @{$Object.Key = $Object.Value}}
-		ElseIf ($Object.GetType().Name -eq "OrderedDictionary") {$Cast = "Ordered"; Embed $Object.Keys $Object}
+		ElseIf ($SystemType.Name -eq "DictionaryEntry" -or $SystemType.Name -like "KeyValuePair*") {$Parse = "Hashtable"; Embed $Object.Key @{$Object.Key = $Object.Value}}
+		ElseIf ($SystemType.Name -eq "OrderedDictionary") {$Cast = "Ordered"; Embed $Object.Keys $Object}
 		ElseIf ($Enumerator -match "[\W]IDictionaryEnumerator[\W]") {$Parse = "Hashtable"; Embed $Object.Keys $Object}
 		ElseIf ($Enumerator -match "[\W]IEnumerator[\W]" -or $Object.GetType().Name -eq "DataTable") {$Parse = "Array"; Embed $Object}
+		ElseIf ($Object -is [ValueType]) {$Cast = $Type; "'$($Object)'"}
 		Else {$Property = $Object | Get-Member -Type Property; If (!$Property) {$Property = $Object | Get-Member -Type NoteProperty}
 			$Names = ForEach ($Name in ($Property | Select-Object -Expand "Name")) {$Object.PSObject.Properties |
 				Where-Object {$_.Name -eq $Name -and $_.IsGettable} | Select-Object -Expand "Name"}
-			If ($Property) {$Cast = "PSCustomObject"; Embed $Names $Object} Else {$Object}
+			If ($Property) {$Cast = "PSCustomObject"; Embed $Names $Object} Else {$Cast = "Void"; "'$Object'"}
 		}
 		Switch ($TypePrefix) {
 			'None'  	{"$Pson"}
