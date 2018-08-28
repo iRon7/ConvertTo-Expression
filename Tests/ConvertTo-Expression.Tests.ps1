@@ -10,11 +10,12 @@ Function Should-BeEqualTo ($Value2, [Parameter(ValueFromPipeLine = $True)]$Value
 Describe 'ConvertTo-Expression' {
 	
 	$Version  = $PSVersionTable.PSVersion
+	$Guid = [GUID]'5f167621-6abe-4153-a26c-f643e1716720'
 	$TimeSpan = New-TimeSpan -Hour 1 -Minute 25
 	$DateTime = Get-Date
 	Mock Get-Date -ParameterFilter {$null -eq $Date} {$DateTime}
 	
-	Context 'Convert custom object' {
+	Context 'custom object' {
 
 	$DataTable = New-Object Data.DataTable
 	$DataColumn = New-Object Data.DataColumn
@@ -38,10 +39,11 @@ Describe 'ConvertTo-Expression' {
 		Booleans   = $False, $True
 		Decimal    = [Decimal]69
 		Single     = [Single]70
-		Double      = [Double]71
+		Double     = [Double]71
 		DateTime   = $DateTime
 		TimeSpan   = $TimeSpan
 		Version    = $Version
+		Guid       = $Guid
 		Script     = {2 * 3}
 		Array      = @("One", "Two", @("Three", "Four"), "Five")
 		EmptyArray = @()
@@ -93,6 +95,7 @@ Describe 'ConvertTo-Expression' {
 			$Actual.DateTime    | Should -Be $DateTime
 			$Actual.TimeSpan    | Should -Be $TimeSpan
 			$Actual.Version     | Should -Be $Version
+			$Actual.Guid        | Should -Be $Guid
 			&$Actual.Script     | Should -Be (&$Object.Script)
 			$Actual.Array       | Should -Be $Object.Array
 			,$Actual.EmptyArray | Should -BeOfType [Array]
@@ -132,6 +135,7 @@ Describe 'ConvertTo-Expression' {
 			$Actual.Long        | Should -Be $Object.Long
 			$Actual.DateTime    | Should -Be $DateTime
 			$Actual.TimeSpan    | Should -Be $TimeSpan
+			$Actual.Guid        | Should -Be $Guid
 			$Actual.Version     | Should -Be $Version
 			&$Actual.Script     | Should -Be (&$Object.Script)
 			$Actual.Array       | Should -Be $Object.Array
@@ -173,6 +177,7 @@ Describe 'ConvertTo-Expression' {
 			$Actual.DateTime    | Should-BeEqualTo $DateTime
 			$Actual.TimeSpan    | Should-BeEqualTo $TimeSpan
 			$Actual.Version     | Should-BeEqualTo $Version
+			$Actual.Guid        | Should-BeEqualTo $Guid
 			&$Actual.Script     | Should-BeEqualTo (&$Object.Script)
 			$Actual.Array       | Should -Be $Object.Array
 			,$Actual.EmptyArray | Should -BeOfType [Array]
@@ -192,7 +197,7 @@ Describe 'ConvertTo-Expression' {
 			$Actual.XML                  | Should -BeOfType [System.Xml.XmlDocument]
 		}
 		
-		It "convert calendar to ConvertTo-Expression" {
+		It "convert calendar to expression" {
 		
 			$Calendar = (Get-UICulture).Calendar
 			
@@ -253,7 +258,7 @@ Describe 'ConvertTo-Expression' {
 		}
 	}
 	
-	Context 'Convert system object' {
+	Context 'system objects' {
 
 		It "convert (wininit) process" {
 		
@@ -266,5 +271,62 @@ Describe 'ConvertTo-Expression' {
 			$Actual.ProcessName | Should-BeEqualTo $WinInitProcess.ProcessName
 			
 		}
+
+		It "convert MyInvocation" {
+		
+
+			$Expression = $MyInvocation | ConvertTo-Expression 
+			
+			$Actual = &$Expression
+			
+			$Actual.MyCommand.Name | Should -Be $MyInvocation.MyCommand.Name
+			
+		}
+	}
+	Context 'special objects' {
+
+		It "Null or empty variable" {
+		
+			$Null | ConvertTo-Expression | Should -be "`$Null"
+		
+		}
+
+		It "Empty array" {
+		
+			,@() | ConvertTo-Expression | Should -be "@()"
+		
+		}
+
+		It "Array containing null" {
+		
+			,@($Null) | ConvertTo-Expression | Should -be "@(`$Null)"
+		
+		}
+
+		It "Array containing empty array" {
+		
+			,@(,@()) | ConvertTo-Expression | Should -be "@(@())"
+		
+		}
+
+		It "Array containing two empty arrays" {
+		
+			,@(@(), @()) | ConvertTo-Expression -Expand 0 | Should -be "@(@(), @())"
+		
+		}
+
+		It "Array containing two strings" {
+		
+			,@('One', 'Two') | ConvertTo-Expression -Expand 0 | Should -be "@('One', 'Two')"
+		
+		}
+
+		It "Empty hash table" {
+		
+			@{} | ConvertTo-Expression | Should -be "@{}"
+		
+		}
+
 	}
 }
+
