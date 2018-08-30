@@ -11,7 +11,8 @@ An expression can be restored to an object by preceding it with an
 ampersand (`&`). An expression that is casted to a string can be
 restored to an object using the native `Invoke-Expression` cmdlet.
 An expression that is stored in a PowerShell (`.ps1`) file might also
-be directly invoked by the PowerShell dot-sourcing technique.
+be directly invoked by the PowerShell dot-sourcing technique:
+`. .\Expression.ps1`.
 
 
 ## Examples
