@@ -27,7 +27,7 @@ PS C:\> $Calendar
 [PSCustomObject]@{
 		'AlgorithmType' = 'SolarCalendar'
 		'CalendarType' = 'Localized'
-		'Eras' = 1
+		'Eras' = @(1)
 		'IsReadOnly' = $False
 		'MaxSupportedDateTime' = [DateTime]'9999-12-31T23:59:59.9999999'
 		'MinSupportedDateTime' = [DateTime]'0001-01-01T00:00:00.0000000'
@@ -38,7 +38,7 @@ PS C:\> &$Calendar
 
 AlgorithmType        : SolarCalendar
 CalendarType         : Localized
-Eras                 : 1
+Eras                 : {1}
 IsReadOnly           : False
 MaxSupportedDateTime : 9999-12-31 11:59:59 PM
 MinSupportedDateTime : 0001-01-01 12:00:00 AM
