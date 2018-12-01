@@ -7,6 +7,13 @@ Function Should-BeEqualTo ($Value2, [Parameter(ValueFromPipeLine = $True)]$Value
 	$Value1 | Should -BeOfType $Value2.GetType().Name
 }
 
+Function Test ([ScriptBlock]$Expression) {
+	Invoke-Expression "`$Object = $Expression"
+	It "ConvertTo-Expression ($Expression)" {ConvertTo-Expression ($Object) -Expand 0 | Should -Be "$Expression"}
+	It "$Expression | ConvertTo-Expression" {$Object | ConvertTo-Expression -Expand 0 | Should -Be "$Expression"}
+}
+
+
 Describe 'ConvertTo-Expression' {
 	
 	$Version  = $PSVersionTable.PSVersion
@@ -269,6 +276,8 @@ Describe 'ConvertTo-Expression' {
 			$Actual = &$Expression
 			
 			$Actual.ProcessName | Should-BeEqualTo $WinInitProcess.ProcessName
+			($Actual.StartInfo.Environment | Where {$_.Key -eq "TEMP"}).Value | Should -Not -BeNullOrEmpty
+			($Actual.StartInfo.EnvironmentVariables | Where {$_.Key -eq "TEMP"}).Value | Should -Not -BeNullOrEmpty
 			
 		}
 
@@ -285,48 +294,25 @@ Describe 'ConvertTo-Expression' {
 	}
 	Context 'special objects' {
 
-		It "Null or empty variable" {
+		Test {'Test'}
+		Test {123}
+		Test {$Null}
+		Test {,@()}
+		Test {,@('Test')}
+		Test {,@($Null)}
+		Test {,@(,@())}
+		Test {,@(,@('Test'))}
+		Test {,@(,@($Null))}
+		Test {,(@(), @())}
+		Test {,(1, 2)}
+		Test {,('a', 'b')}
+		Test {,($Null, $False, $True)}
+		Test {,(@(1), @(2))}
+		Test {,(@('a'), @('b'))}
+		Test {,(@($Null), @($False), @($True))}
+		Test {@{}}
+		Test {@{'a' = 1; 'b' = 2}}
+		Test {@{'a' = 1, 2; 'b' = 3}}
 		
-			$Null | ConvertTo-Expression | Should -be "`$Null"
-		
-		}
-
-		It "Empty array" {
-		
-			,@() | ConvertTo-Expression | Should -be "@()"
-		
-		}
-
-		It "Array containing null" {
-		
-			,@($Null) | ConvertTo-Expression | Should -be "@(`$Null)"
-		
-		}
-
-		It "Array containing empty array" {
-		
-			,@(,@()) | ConvertTo-Expression | Should -be "@(@())"
-		
-		}
-
-		It "Array containing two empty arrays" {
-		
-			,@(@(), @()) | ConvertTo-Expression -Expand 0 | Should -be "@(@(), @())"
-		
-		}
-
-		It "Array containing two strings" {
-		
-			,@('One', 'Two') | ConvertTo-Expression -Expand 0 | Should -be "@('One', 'Two')"
-		
-		}
-
-		It "Empty hash table" {
-		
-			@{} | ConvertTo-Expression | Should -be "@{}"
-		
-		}
-
 	}
 }
-
