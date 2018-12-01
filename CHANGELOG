@@ -37,7 +37,13 @@
 2.5.3     2018-08-10 Ronald Bode Fixed: ScriptBlock not closed if the last line is a #Remark
 2.6.0     2018-08-28 Ronald Bode Fixed empty array `@()` result and simplified recursive calls
 2.7.0     2018-08-29 Ronald Bode Directly processing input objects from the pipeline (output is always a single expression)
-2.7.0     2018-08-29 Ronald Bode Directly processing input objects from the pipeline (output is always a single expression)
 2.7.0     2018-08-29 Ronald Bode Removed parenthesis `@(...)` from pipeline object list (e.g `'One', 'Two' | ConvertTo-Expression`)
 2.7.0     2018-08-29 Ronald Bode Extended numeric type list for (PSv2) typecasting
 2.7.0     2018-08-29 Ronald Bode Casting DictionaryEntries and KeyValuePairs to PSObjects (instead of hashtables)
+2.7.1     2018-08-29 Ronald Bode Only add a newline to a function when the last line contains a #
+2.7.2     2018-08-29 Ronald Bode Default empty type (typecast) for ValueTypes.
+2.7.3     2018-11-16 Ronald Bode Changed [PSObject] to [PSCustomObject] type
+2.7.4     2018-11-28 Ronald Bode Fixed IntPtr output type
+2.7.5     2018-11-29 Ronald Bode Preventing nested array flattening by adding a comma
+3.0.0     2018-11-29 Ronald Bode Minimized root top (array) expression top
+3.0.1     2018-11-30 Ronald Bode Minimized all array expressions (only use @ sign and brackets were required)
