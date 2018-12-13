@@ -1,11 +1,11 @@
 <#PSScriptInfo
-.VERSION 3.0.1
+.VERSION 3.0.3
 .GUID 5f167621-6abe-4153-a26c-f643e1716720
 .AUTHOR Ronald Bode (iRon)
-.DESCRIPTION Serializes an object to a PowerShell expression (PSON, PowerShell Object Notation).
+.DESCRIPTION Stringifys an object to a PowerShell expression (PSON, PowerShell Object Notation).
 .COMPANYNAME
 .COPYRIGHT
-.TAGS PSON PowerShell Object Notation expression serialize
+.TAGS PSON PowerShell Object Notation expression Stringify
 .LICENSEURI https://github.com/iRon7/ConvertTo-Expression/LICENSE.txt
 .PROJECTURI https://github.com/iRon7/ConvertTo-Expression
 .ICONURI https://raw.githubusercontent.com/iRon7/ConvertTo-Expression/master/ConvertTo-Expression.png
@@ -22,24 +22,33 @@ Function ConvertTo-Expression {
 		Serializes an object to a PowerShell expression.
 
 	.DESCRIPTION
-		The ConvertTo-Expression cmdlet converts (serializes) an object to
-		a PowerShell expression. The object can be stored in a variable,
-		file or any other common storage for later use or to be ported to
-		another system.
+		The ConvertTo-Expression cmdlet converts (serialize) an object to a
+		PowerShell expression. The object can be stored in a variable, file or
+		any other common storage for later use or to be ported to another
+		system.
 
 		Converting back from an expression
 		An expression can be restored to an object by preceding it with an
-		ampersand (&). An expression that is casted to a string can be
-		restored to an object using the native Invoke-Expression cmdlet.
+		ampersand (&):
+		
+			$Object = &($Object | ConverTo-Expression)
+		
+		An expression that is casted to a string can be restored to an
+		object using the native Invoke-Expression cmdlet:
+		
+			$Object = Invoke-Expression [String]($Object | ConverTo-Expression)
+		
 		An expression that is stored in a PowerShell (.ps1) file might also
 		be directly invoked by the PowerShell dot-sourcing technique, e.g.:
-		. .\Expression.ps1
+		
+			$Object | ConvertTo=Expression | Out-File .\Expression.ps1
+			$Object = . .\Expression.ps1
 
 	.PARAMETER InputObject
-		Specifies the objects to convert to a PowerShell expression. Enter
-		a variable that contains the objects, or type a command or
-		expression that gets the objects. You can also pipe one or more
-		objects to ConvertTo-Expression.
+		Specifies the objects to convert to a PowerShell expression. Enter a
+		variable that contains the objects, or type a command or expression
+		that gets the objects. You can also pipe one or more objects to
+		ConvertTo-Expression.
 
 	.PARAMETER Depth
 		Specifies how many levels of contained objects are included in the
@@ -48,14 +57,13 @@ Function ConvertTo-Expression {
 	.PARAMETER Expand
 		Specifies till what level the contained objects are expanded over
 		separate lines and indented according to the -Indentation and
-		-IndentChar parameters. The default value is 9.
+		-IndentChar parameters. The default value is equal to the -Depth value.
 
 		A negative value will remove redundant spaces and compress the
-		PowerShell expression to a single line (except for multi-line
-		strings).
+		PowerShell expression to a single line (except for multi-line strings).
 
-		Xml documents and multi-line strings are embedded in a
-		"here string" and aligned to the left.
+		Xml documents and multi-line strings are embedded in a "here string"
+		and aligned to the left.
 
 	.PARAMETER Indentation
 		Specifies how many IndentChars to write for each level in the
@@ -69,38 +77,32 @@ Function ConvertTo-Expression {
 
 		-TypePrefix None
 			No type information will be added to the (embedded) objects and
-			values in the PowerShell expression. This means that objects
-			and values will be parsed to one of the following data types
-			when reading them back with Invoke-Expression: a numeric value,
-			a [String] ('...'), an [Array] (@(...)) or a [HashTable]
-			(@{...}).
+			values in the PowerShell expression. This means that objects and
+			values will be parsed to one of the following data types when are
+			deserialized: a numeric value, a [String] ('...'), an [Array]
+			(@(...)) or a [HashTable] (@{...}).
 
 		-TypePrefix Native
 			The original type prefix is added to the (embedded) objects and
-			values in the PowerShell expression. Note that most system
-			(.Net) objects can’t be read back with Invoke-Expression, but
-			option might help to reveal (embedded) object types and
-			hierarchies.
+			values in the PowerShell expression. Note that most system (.Net)
+			objects can’t be deserialized to their native type:, but option
+			might help to reveal (embedded) object types and hierarchies.
 
 		-TypePrefix Cast (Default)
 			The type prefix is only added to (embedded) objects and values
-			when required and optimized for read back with
-			Invoke-Expression by e.g. converting system (.Net) objects to
-			PSCustomObject objects. Numeric values won't have a strict
-			type and therefor parsed to the default type that fits the
-			value when restored.
+			when required and optimized for deserialization by e.g. converting
+			system (.Net) objects to PSCustomObject objects. Numeric values
+			won't have a strict type and therefor parsed to the default type
+			that fits the value when restored.
 
 		-TypePrefix Strict
-			All (embedded) objects and values will have an explicit type
-			prefix optimized for read back with Invoke-Expression by e.g.
-			converting system (.Net) objects to PSCustomObject objects.
+			All (embedded) objects and values will have an explicit type prefix
+			compatible for deserialization by e.g. converting system (.Net)
+			objects to PSCustomObject objects.
 
 	.PARAMETER NewLine
 		Specifies which characters to use for a new line. The default is
 		defined by the operating system.
-
-	.PARAMETER Iteration
-		Do not use (for internal use only).
 
 	.EXAMPLE
 
@@ -111,7 +113,7 @@ Function ConvertTo-Expression {
 		[PSCustomObject]@{
 				'AlgorithmType' = 'SolarCalendar'
 				'CalendarType' = 'Localized'
-				'Eras' = 1
+				'Eras' = @(1)
 				'IsReadOnly' = $False
 				'MaxSupportedDateTime' = [DateTime]'9999-12-31T23:59:59.9999999'
 				'MinSupportedDateTime' = [DateTime]'0001-01-01T00:00:00.0000000'
@@ -122,7 +124,7 @@ Function ConvertTo-Expression {
 
 		AlgorithmType        : SolarCalendar
 		CalendarType         : Localized
-		Eras                 : 1
+		Eras                 : {1}
 		IsReadOnly           : False
 		MaxSupportedDateTime : 9999-12-31 11:59:59 PM
 		MinSupportedDateTime : 0001-01-01 12:00:00 AM
@@ -170,38 +172,36 @@ Function ConvertTo-Expression {
 		Invoke-Expression (Alias ConvertFrom-Pson)
 #>
 	[CmdletBinding()][OutputType([ScriptBlock])]Param (
-		[Parameter(ValueFromPipeLine = $True)][Alias('InputObject')]$Object, [Int]$Depth = 9, [Int]$Expand = 9,
+		[Parameter(ValueFromPipeLine = $True)][Alias('InputObject')]$Object, [Int]$Depth = 9, [Int]$Expand = $Depth,
 		[Int]$Indentation = 1, [String]$IndentChar = "`t", [ValidateSet("None", "Native", "Cast", "Strict")][String]$TypePrefix = "Cast",
-		[String]$NewLine = [System.Environment]::NewLine, [Int]$Iteration = 0
+		[String]$NewLine = [System.Environment]::NewLine
 	)
 	Begin {
-		$Params = $PSBoundParameters; If (!$Iteration) {$ListItem = $True}
 		$NumberTypes = @{}; "byte", "int", "int16", "int32", "int64", "sbyte", "uint", "uint16", "uint32", "uint64", "float", "single", "double", "long", "decimal", "IntPtr" | ForEach-Object {$NumberTypes[$_] = $Null}
 		$TypeAccelerators = @{}; [PSObject].Assembly.GetType("System.Management.Automation.TypeAccelerators")::get.GetEnumerator() | ForEach-Object {$TypeAccelerators[$_.Value] = $_.Key}
-		$Space = If ($Expand -ge 0) {" "} Else {""}; $Tab = $IndentChar * $Indentation; $LineUp = "$NewLine$($Tab * $Iteration)"
-		Function Iterate ($Object, [Switch]$ListItem) {
-			If ($Iteration -lt $Depth) {
-				$Params = $Params; $Params.Object = $Object; $Params.Iteration = $Iteration + 1; If ($Expand -gt 0) {$Params.Expand = $Expand - 1}
-				ConvertTo-Expression @Params
-			 } Else {"'...'"}
+		Function Iterate ($Object, [String]$Path, [Switch]$ListItem) {
+			If ($Iteration -lt $Depth) {Stringify $Object -Expand ($Expand - ($Expand -gt 0)) -Path $Path -Iteration ($Iteration + 1)} Else {"'...'"}
 		}
-		Function Stringify ([String[]]$Items, [String[]]$Separator = @(), [String[]]$Open = @(), [String[]]$Close = @()) {
+		Function Format ([String[]]$Items, [String[]]$Separator = @(), [String[]]$Open = @(), [String[]]$Close = @()) {
 			If (($Expand -le 0) -or (@($Items).Count -le 1)) {$Open[0] + ($Items -Join "$($Separator[0])$Space") + $Close[0]}
 			ElseIf ($Open[-1]) {"$($Open[-1])$LineUp$Tab$($Items -Join $($Separator[-1] + $LineUp + $Tab))$LineUp$($Close[-1])"}
 			Else {$Items -Join "$($Separator[-1])$LineUp"}
 		}
-		Function Format-Array ($List) {
-			$a = $List | ForEach-Object {Iterate $_ -ListItem}; If ($a -is [String] -and $List[0] -is [Array]) {$a = ",$a"}
-			If ($a.Count -le 1) {Stringify $a "," "@(" ")"} ElseIf ($ListItem) {Stringify $a "," "(" ")"} Else {Stringify $a "," "", "(" "", ")"}
+		Function Serialize ($Keys) {
+			$Paths[$HashCode] = $Path
+			If ($Null -ne $Keys) {
+				$Names = If ($Keys -eq $True) {$Object.Keys} Else {
+					(&{ForEach ($Name in ($Keys | Select-Object -Expand "Name")) {$Object.PSObject.Properties |
+					Where-Object {$_.Name -eq $Name -and $_.IsGettable} | Select-Object -Expand "Name"}})
+				}
+				Format ($Names | ForEach-Object {"'$_'$Space=$Space" + (Iterate $Object.$_ "$Path.$_")}) ";", "" "@{" "}"
+			} Else {
+				$i = 0; $a = $Object | ForEach-Object {Iterate $_ "$Path[$(($i++))]" -ListItem}; If ($a -is [String] -and $Object[0] -is [Array]) {$a = ",$a"}
+				If ($a.Count -le 1) {Format $a "," "@(" ")"} ElseIf ($ListItem) {Format $a "," "(" ")"} Else {Format $a "," "", "(" "", ")"}
+			}
 		}
-		Function Format-HashTable ($Dictionary, $Keys = $Dictionary.Keys) {
-			Stringify ($Keys | ForEach-Object {"'$_'$Space=$Space" + (Iterate $Dictionary.$_)}) ";", "" "@{" "}"
-		}
-		Function Format-Object ($Properties) {
-			Format-HashTable $Object (&{ForEach ($Name in ($Properties | Select-Object -Expand "Name")) {$Object.PSObject.Properties |
-				Where-Object {$_.Name -eq $Name -and $_.IsGettable} | Select-Object -Expand "Name"}})
-		}
-		Function Serialize($Object) {
+		Function Stringify($Object, [Int]$Expand, [String]$Path, [Int]$Iteration) {
+			$Space = If ($Expand -ge 0) {" "} Else {""}; $Tab = $IndentChar * $Indentation; $LineUp = "$NewLine$($Tab * $Iteration)"
 			If ($Null -eq $Object) {"`$Null"} Else {
 				$SystemType = $Object.GetType(); $Type = $TypeAccelerators.$SystemType; If (!$Type) {$Type = $SystemType.FullName}; $Parse = $Type; $Cast = $Null;
 				$Enumerator = $Object.GetEnumerator.OverloadDefinitions
@@ -215,15 +215,18 @@ Function ConvertTo-Expression {
 				ElseIf ($Object -is [Xml]) {$Cast = $Type; $SW = New-Object System.IO.StringWriter; $XW = New-Object System.Xml.XmlTextWriter $SW
 					$XW.Formatting = If ($Expand -le 0) {"None"} Else {"Indented"}; $XW.Indentation = $Indentation; $XW.IndentChar = $IndentChar
 					$Object.WriteContentTo($XW); If ($Expand -le 0) {"'$SW'"} Else {"@'$NewLine$SW$NewLine'@$NewLine"}}
-				ElseIf ($SystemType.Name -eq "DataTable") {$Parse = "Array"; Format-Array $Object}
-				ElseIf ($SystemType.Name -eq "DictionaryEntry") {$Cast = "PSCustomObject"; Format-Object ($Object | Get-Member -Type Property)}
-				ElseIf ($SystemType.Name -like "KeyValuePair*") {$Cast = "PSCustomObject"; Format-Object ($Object | Get-Member -Type Property)}
-				ElseIf ($SystemType.Name -eq "OrderedDictionary") {$Cast = "Ordered"; Format-HashTable $Object}
-				ElseIf ($Enumerator -match "[\W]IDictionaryEnumerator[\W]") {$Parse = "Hashtable"; Format-HashTable $Object}
-				ElseIf ($Enumerator -match "[\W]IEnumerator[\W]") {$Parse = "Array"; Format-Array $Object}
-				ElseIf ($Object -is [ValueType]) {$Cast = $Type; "'$($Object)'"}
-				Else {$Properties = $Object | Get-Member -Type Property; If (!$Properties) {$Properties = $Object | Get-Member -Type NoteProperty}
-					If ($Properties) {$Cast = "PSCustomObject"; Format-Object $Properties} Else {$Cast = "Void"; "'$Object'"}
+				Else {$HashCode = $Object.GetHashCode()
+					If ($HashCode -and $Paths.ContainsKey($HashCode)) {$Type, $Cast, $Parse = $Null; $P = $Paths[$HashCode]; If ($P) {"'-> $P'"} Else {"'-> .'"}}
+					ElseIf ($SystemType.Name -eq "DataTable") {$Parse = "Array"; Serialize}
+					ElseIf ($SystemType.Name -eq "DictionaryEntry") {$Cast = "PSCustomObject"; Serialize ($Object | Get-Member -Type Property)}
+					ElseIf ($SystemType.Name -like "KeyValuePair*") {$Cast = "PSCustomObject"; Serialize ($Object | Get-Member -Type Property)}
+					ElseIf ($SystemType.Name -eq "OrderedDictionary") {$Cast = "Ordered"; Serialize $True}
+					ElseIf ($Enumerator -match "[\W]IDictionaryEnumerator[\W]") {$Parse = "Hashtable"; Serialize $True}
+					ElseIf ($Enumerator -match "[\W]IEnumerator[\W]") {$Parse = "Array"; Serialize}
+					ElseIf ($Object -is [ValueType]) {$Cast = $Type; "'$($Object)'"}
+					Else {$Properties = $Object | Get-Member -Type Property; If (!$Properties) {$Properties = $Object | Get-Member -Type NoteProperty}
+						If ($Properties) {$Cast = "PSCustomObject"; Serialize $Properties} Else {$Cast = "Void"; "'$Object'"}
+					}
 				}
 				Switch ($TypePrefix) {
 					'None'  	{"$Pson"}
@@ -233,19 +236,18 @@ Function ConvertTo-Expression {
 				}
 			}
 		}
-		$Items = @()
+		$Iteration = 0; $ListItem = $True; $Items = @(); $i = 0; $Paths = @{}
 	}
 	Process {
-		If (!$Iteration -and !$PSCmdlet.MyInvocation.ExpectingInput -and $Object -is [Array] -and $Object.Count) {
-			$Items = @($Object | ForEach-Object {Serialize $_}); $ContainsArray = $Object[0] -is [Array]
-		} Else {$Items += Serialize $Object; $ContainsArray = $Object -is [Array]}
+		If (!$PSCmdlet.MyInvocation.ExpectingInput -and $Object -is [Array] -and $Object.Count) {
+			$Items = @($Object | ForEach-Object {Stringify $_ -Expand $Expand -Path "[$(($i++))]"}); $ContainsArray = $Object[0] -is [Array]
+		} Else {$Items += Stringify $Object -Expand $Expand; $ContainsArray = $Object -is [Array]}
 	}
 	End {
-		If ($Iteration) {$Items} Else {
-			If ($Items.Count -le 1 -and $ContainsArray) {$Items = "," + $Items}
-			[ScriptBlock]::Create((Stringify $Items ",", ""))
-		}
+		If ($Items.Count -le 1 -and $ContainsArray) {$Items = "," + $Items}
+		$Expression = Format $Items ",", ""
+		Try {[ScriptBlock]::Create($Expression)} Catch {$PSCmdlet.WriteError($_); $Expression}
 	}
 } Set-Alias pson ConvertTo-Expression; Set-Alias ctex ConvertTo-Expression
-Set-Alias ConvertTo-Pson ConvertTo-Expression -Description "Serializes an object to a PowerShell expression."
+Set-Alias ConvertTo-Pson ConvertTo-Expression -Description "Stringifys an object to a PowerShell expression."
 Set-Alias ConvertFrom-Pson  Invoke-Expression -Description "Parses a PowerShell expression to an object."
