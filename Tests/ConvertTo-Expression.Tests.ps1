@@ -162,9 +162,9 @@ Describe 'ConvertTo-Expression' {
 			$Actual.DataTable.Name[1]    | Should -Be $Object.DataTable.Name[1]
 		}
 		
-		It "converts strict type" {
+		It "converts Strong type" {
 			
-			$Expression = $Object | ConvertTo-Expression -Type Strict
+			$Expression = $Object | ConvertTo-Expression -Type Strong
 			
 			$Actual = &$Expression
 			
@@ -316,3 +316,4 @@ Describe 'ConvertTo-Expression' {
 		
 	}
 }
+
