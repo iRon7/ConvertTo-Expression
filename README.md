@@ -151,11 +151,11 @@ hierarchies.
 The type prefix is only added to (embedded) objects and values
 when required and optimized for read back with
 Invoke-Expression by e.g. converting system (.Net) objects to
-PSCustomObject objects. Numeric values won't have a strict
+PSCustomObject objects. Numeric values won't have a strong
 type and therefor parsed to the default type that fits the
 value when restored.
 
-`-TypePrefix Strict`
+`-TypePrefix Strong`
 All (embedded) objects and values will have an explicit type
 prefix optimized for read back with `Invoke-Expression` by e.g.
 converting system (.Net) objects to PSCustomObject objects.
