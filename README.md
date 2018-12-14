@@ -8,12 +8,21 @@ another system.
 
 #### Converting back *from* an expression  
 An expression can be restored to an object by preceding it with an
-ampersand (`&`). An expression that is casted to a string can be
-restored to an object using the native `Invoke-Expression` cmdlet.
+ampersand (`&`):
+```powershell
+$Object = &($Object | ConverTo-Expression)
+```
+An expression that is casted to a string can be restored to an
+object using the native `Invoke-Expression` cmdlet:
+```powershell
+$Object = Invoke-Expression [String]($Object | ConverTo-Expression)
+```
 An expression that is stored in a PowerShell (`.ps1`) file might also
 be directly invoked by the PowerShell dot-sourcing technique, e.g.:
-`. .\Expression.ps1`.
-
+```powershell
+$Object | ConvertTo=Expression | Out-File .\Expression.ps1
+$Object = . .\Expression.ps1
+```
 
 ## Examples
 
