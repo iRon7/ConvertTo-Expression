@@ -47,4 +47,6 @@
 2.7.5     2018-11-29 Ronald Bode Preventing nested array flattening by adding a comma
 3.0.0     2018-11-29 Ronald Bode Minimized root top (array) expression top
 3.0.1     2018-11-30 Ronald Bode Minimized all array expressions (only use @ sign and brackets were required)
-3.0.2     2018-12-13 Ronald Bode Removed (internal) -Iteration parameter. Improved performance by using larger variable scopes.
+3.0.2     2018-12-14 Ronald Bode Fixed PSScript Analizer PSUseDeclaredVarsMoreThanAssignment issue
+3.0.3     2018-12-14 Ronald Bode Renamed option: -TypePrefix Strict to: -TypePrefix Strong
+3.0.4     2018-12-14 Ronald Bode Cut off fcyclic references with: `[Ref]...` (where the number of dots represents the parent level)
