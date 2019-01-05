@@ -1,5 +1,5 @@
 <#PSScriptInfo
-.VERSION 3.0.4
+.VERSION 3.1.0
 .GUID 5f167621-6abe-4153-a26c-f643e1716720
 .AUTHOR Ronald Bode (iRon)
 .DESCRIPTION Stringifys an object to a PowerShell expression (PSON, PowerShell Object Notation).
@@ -72,37 +72,20 @@ Function ConvertTo-Expression {
 	.PARAMETER IndentChar
 		Specifies which character to use for indenting.
 
-	.PARAMETER TypePrefix
-		Defines how explicit the object type is being parsed:
+	.PARAMETER Strong
+		By default, the ConvertTo-Expression cmdlet will return a weakly typed
+		expression which is best for transfing objects between differend
+		PowerShell systems.
+		The -Strong parameter will strickly define value types and objects
+		in a way that they can still be read by same PowerShell system and
+		PowerShell system with the same configuration (installed modules etc.).
 
-		-TypePrefix None
-			No type information will be added to the (embedded) objects and
-			values in the PowerShell expression. This means that objects and
-			values will be parsed to one of the following data types when are
-			deserialized: a numeric value, a [String] ('...'), an [Array]
-			(@(...)) or a [HashTable] (@{...}).
-
-		-TypePrefix Native
-			The original type prefix is added to the (embedded) objects and
-			values in the PowerShell expression. Note that most system (.Net)
-			objects can’t be deserialized to their native type:, but option
-			might help to reveal (embedded) object types and hierarchies.
-
-		-TypePrefix Cast (Default)
-			The type prefix is only added to (embedded) objects and values
-			when required and optimized for deserialization by e.g. converting
-			system (.Net) objects to PSCustomObject objects. Numeric values
-			won't have a Strong type and therefor parsed to the default type
-			that fits the value when restored.
-
-		-TypePrefix Strong
-			All (embedded) objects and values will have an explicit type prefix
-			compatible for deserialization by e.g. converting system (.Net)
-			objects to PSCustomObject objects.
-
-	.PARAMETER NewLine
-		Specifies which characters to use for a new line. The default is
-		defined by the operating system.
+	.PARAMETER Explore
+		In explore mode, all type prefixes are omitted in the output expression
+		(objects will cast to to hash tables). In case the -Strong parameter is
+		also supplied, all orginal (.Net) type names are shown.
+		The -Explore switch is usefull for exploring object hyrachies and data
+		type, not for saving and transfering objects.
 
 	.EXAMPLE
 
@@ -173,84 +156,83 @@ Function ConvertTo-Expression {
 #>
 	[CmdletBinding()][OutputType([ScriptBlock])]Param (
 		[Parameter(ValueFromPipeLine = $True)][Alias('InputObject')]$Object, [Int]$Depth = 9, [Int]$Expand = $Depth,
-		[Int]$Indentation = 1, [String]$IndentChar = "`t", [ValidateSet("None", "Native", "Cast", "Strong")][String]$TypePrefix = "Cast",
+		[Int]$Indentation = 1, [String]$IndentChar = "`t", [Switch]$Strong, [Switch]$Explore,
 		[String]$NewLine = [System.Environment]::NewLine
 	)
 	Begin {
 		$NumberTypes = @{}; "byte", "int", "int16", "int32", "int64", "sbyte", "uint", "uint16", "uint32", "uint64", "float", "single", "double", "long", "decimal", "IntPtr" | ForEach-Object {$NumberTypes[$_] = $Null}
-		$TypeAccelerators = @{}; [PSObject].Assembly.GetType("System.Management.Automation.TypeAccelerators")::get.GetEnumerator() | ForEach-Object {$TypeAccelerators[$_.Value] = $_.Key}
-		Function Iterate ($Object, [String]$Path, [Switch]$ListItem) {
-			If ($Iteration -lt $Depth) {Stringify $Object -Expand ($Expand - ($Expand -gt 0)) -Path $Path -Iteration ($Iteration + 1)} Else {"'...'"}
-		}
-		Function Format ([String[]]$Items, [String[]]$Separator = @(), [String[]]$Open = @(), [String[]]$Close = @()) {
+		$CastAccelerators = @{}; [PSObject].Assembly.GetType("System.Management.Automation.TypeAccelerators")::get.GetEnumerator() | ForEach-Object {$CastAccelerators[$_.Value] = $_.Key}
+		Function PathName([Array]$Path = @()) {($Path | ForEach-Object {If ($_ -is [Int]) {"[$_]"} Else {".$_"}}) -Join ''}
+		Function List([String[]]$Items, [String[]]$Separator = @(), [String[]]$Open = @(), [String[]]$Close = @(), [Int]$Indent) {
 			If (($Expand -le 0) -or (@($Items).Count -le 1)) {$Open[0] + ($Items -Join "$($Separator[0])$Space") + $Close[0]}
 			Else {
-				$Lead = "$NewLine$($Tab * $Iteration)"
+				$Lead = "$NewLine$($Tab * $Indent)"
 				If ($Open[-1]) {"$($Open[-1])$Lead$Tab$($Items -Join $($Separator[-1] + $Lead + $Tab))$Lead$($Close[-1])"}
 				Else {$Items -Join "$($Separator[-1])$Lead"}
 			}
 		}
-		Function Serialize ($Keys) {
-			$Parents[$HashCode] = $Iteration
-			If ($Null -ne $Keys) {
-				$Names = If ($Keys -eq $True) {$Object.Keys} Else {
-					(&{ForEach ($Name in ($Keys | Select-Object -Expand "Name")) {$Object.PSObject.Properties |
-					Where-Object {$_.Name -eq $Name -and $_.IsGettable} | Select-Object -Expand "Name"}})
+		Function Stringify($Object, [Int]$Expand, [Array]$Path = @()) {
+			Function Serialize ($Keys) {
+				Function Iterate($Object, $Name, [Switch]$ListItem) {
+					If ($Path.Count -lt $Depth) {Stringify $Object -Expand ($Expand - ($Expand -gt 0)) -Path ($Path + $Name)} Else {"'...'"}
 				}
-				Format ($Names | ForEach-Object {"'$_'$Space=$Space" + (Iterate $Object.$_ "$Path.$_")}) ";", "" "@{" "}"
-			} Else {
-				$i = 0; $a = $Object | ForEach-Object {Iterate $_ "$Path[$(($i++))]" -ListItem}; If ($a -is [String] -and $Object[0] -is [Array]) {$a = ",$a"}
-				If ($a.Count -le 1) {Format $a "," "@(" ")"} ElseIf ($ListItem) {Format $a "," "(" ")"} Else {Format $a "," "", "(" "", ")"}
+				$Refs[$HashCode] = $Path
+				If ($Null -ne $Keys) {
+					$Names = If ($Keys -eq $True) {$Object.Keys} Else {
+						(&{ForEach ($Name in ($Keys | Select-Object -Expand "Name")) {$Object.PSObject.Properties |
+						Where-Object {$_.Name -eq $Name -and $_.IsGettable} | Select-Object -Expand "Name"}})
+					}
+					List ($Names | ForEach-Object {"'$_'$Space=$Space" + (Iterate $Object.$_ "$_")}) ";", "" "@{" "}" $Path.Count
+				} Else {
+					$i = 0; $Array = $Object | ForEach-Object {Iterate $_ $i++ -ListItem}
+					If ($Array -is [String] -and $Object[0] -is [Array]) {$Array = ",$Array"}
+					If ($Array.Count -le 1) {List $Array "," "@(" ")" $Path.Count}
+					ElseIf ($ListItem) {List $Array "," "(" ")" $Path.Count}
+					Else {List $Array "," "", "(" "", ")" $Path.Count}
+				}
 			}
-		}
-		Function Stringify($Object, [Int]$Expand, [String]$Path, [Int]$Iteration) {
 			If ($Null -eq $Object) {"`$Null"} Else {
-				$SystemType = $Object.GetType(); $Type = $TypeAccelerators.$SystemType; If (!$Type) {$Type = $SystemType.FullName}; $Parse = $Type; $Cast = $Null;
+				$Type = $Object.GetType(); $Cast = $CastAccelerators.$Type; If (!$Cast) {$Cast = $Type.FullName}; $Convert = $Cast; $Parse = $Null;
 				$Enumerator = $Object.GetEnumerator.OverloadDefinitions
-				$Pson = If ($Object -is [Boolean]) {If ($Object) {'$True'} Else {'$False'}}
-				ElseIf ($NumberTypes.ContainsKey($SystemType.Name)) {"$Object"}
+				$DTO = If ($Object -is [Boolean]) {If ($Object) {'$True'} Else {'$False'}}
+				ElseIf ($NumberTypes.ContainsKey($Type.Name)) {"$Object"}
 				ElseIf ($Object -is [String]) {If ($Object -Match "[`r`n]") {"@'$NewLine$Object$NewLine'@$NewLine"} Else {"'$($Object.Replace('''', ''''''))'"}}
-				ElseIf ($Object -is [DateTime]) {$Cast = $Type; "'$($Object.ToString('o'))'"}
-				ElseIf ($Object -is [Version]) {$Cast = $Type; "'$Object'"}
+				ElseIf ($Object -is [DateTime]) {$Parse = $Cast; "'$($Object.ToString('o'))'"}
+				ElseIf ($Object -is [Version]) {$Parse = $Cast; "'$Object'"}
+				ElseIf ($Object -is [Enum]) {If ($Strong) {$Parse = $Cast; "'$Object'"} Else {"$(0 + $Object)"}}
 				ElseIf ($Object -is [ScriptBlock]) {If ($Object -Match "\#.*?$") {"{$Object$NewLine}"} Else {"{$Object}"}}
 				ElseIf ($Object -is [RuntimeTypeHandle]) {$Object.Value}
-				ElseIf ($Object -is [Xml]) {$Cast = $Type; $SW = New-Object System.IO.StringWriter; $XW = New-Object System.Xml.XmlTextWriter $SW
+				ElseIf ($Object -is [Xml]) {$Parse = $Cast; $SW = New-Object System.IO.StringWriter; $XW = New-Object System.Xml.XmlTextWriter $SW
 					$XW.Formatting = If ($Expand -le 0) {"None"} Else {"Indented"}; $XW.Indentation = $Indentation; $XW.IndentChar = $IndentChar
 					$Object.WriteContentTo($XW); If ($Expand -le 0) {"'$SW'"} Else {"@'$NewLine$SW$NewLine'@$NewLine"}}
 				Else {$HashCode = $Object.GetHashCode()
-					If ($HashCode -and $Parents.ContainsKey($HashCode)) {$Type, $Cast, $Parse = $Null; "'[Ref]$('.' * ($Iteration - $Parents[$HashCode]))'"}
-					ElseIf ($SystemType.Name -eq "DataTable") {$Parse = "Array"; Serialize}
-					ElseIf ($SystemType.Name -eq "DictionaryEntry") {$Cast = "PSCustomObject"; Serialize ($Object | Get-Member -Type Property)}
-					ElseIf ($SystemType.Name -like "KeyValuePair*") {$Cast = "PSCustomObject"; Serialize ($Object | Get-Member -Type Property)}
-					ElseIf ($SystemType.Name -eq "OrderedDictionary") {$Cast = "Ordered"; Serialize $True}
-					ElseIf ($Enumerator -match "[\W]IDictionaryEnumerator[\W]") {$Parse = "Hashtable"; Serialize $True}
-					ElseIf ($Enumerator -match "[\W]IEnumerator[\W]") {$Parse = "Array"; Serialize}
-					ElseIf ($Object -is [ValueType]) {$Cast = $Type; "'$($Object)'"}
+					If ($HashCode -and $Refs.ContainsKey($HashCode)) {'$_' + (PathName $Refs[$HashCode])}
+					ElseIf ($Type.Name -eq "DataTable") {$Convert = "Array"; Serialize}
+					ElseIf ($Type.Name -eq "DictionaryEntry") {$Parse = "PSCustomObject"; Serialize ($Object | Get-Member -Type Property)}
+					ElseIf ($Type.Name -like "KeyValuePair*") {$Parse = "PSCustomObject"; Serialize ($Object | Get-Member -Type Property)}
+					ElseIf ($Type.Name -eq "OrderedDictionary") {$Parse = "Ordered"; Serialize $True}
+					ElseIf ($Enumerator -match "[\W]IDictionaryEnumerator[\W]") {$Convert = "Hashtable"; Serialize $True}
+					ElseIf ($Enumerator -match "[\W]IEnumerator[\W]") {$Convert = "Array"; Serialize}
+					ElseIf ($Object -is [ValueType]) {$Parse = $Cast; "'$($Object)'"}
 					Else {$Properties = $Object | Get-Member -Type Property; If (!$Properties) {$Properties = $Object | Get-Member -Type NoteProperty}
-						If ($Properties) {$Cast = "PSCustomObject"; Serialize $Properties} Else {$Cast = "Void"; "'$Object'"}
+						If ($Properties) {$Parse = "PSCustomObject"; Serialize $Properties} Else {"'$Object'"}
 					}
 				}
-				Switch ($TypePrefix) {
-					'None'  	{"$Pson"}
-					'Native'	{"[$Type]$Pson"}
-					'Cast'  	{If ($Cast) {"[$Cast]$Pson"} Else {"$Pson"}}
-					'Strong'	{If ($Cast) {"[$Cast]$Pson"} Else {"[$Parse]$Pson"}}
-				}
+				If ($Strong) {If ($Explore) {"[$Cast]$DTO"} Else {If ($Parse) {"[$Parse]$DTO"} Else {"[$Convert]$DTO"}}}
+				Else {If ($Explore) {"$DTO"} Else {If ($Parse) {"[$Parse]$DTO"} Else {"$DTO"}}}
 			}
 		}
 		$Space = If ($Expand -ge 0) {" "} Else {""}; $Tab = $IndentChar * $Indentation
-		$Iteration = 0; $ListItem = $True; $Items = @(); $i = 0; $Parents = @{}
+		$ListItem = $True; $Items = @(); $Refs = @{}
 	}
 	Process {
 		If (!$PSCmdlet.MyInvocation.ExpectingInput -and $Object -is [Array] -and $Object.Count) {
-			$Items = @($Object | ForEach-Object {Stringify $_ -Expand $Expand -Path "[$(($i++))]"}); $ContainsArray = $Object[0] -is [Array]
+			$i = 0; $Items = @($Object | ForEach-Object {Stringify $_ -Expand $Expand}); $ContainsArray = $Object[0] -is [Array]
 		} Else {$Items += Stringify $Object -Expand $Expand; $ContainsArray = $Object -is [Array]}
 	}
 	End {
 		If ($Items.Count -le 1 -and $ContainsArray) {$Items = "," + $Items}
-		$Expression = Format $Items ",", ""
+		$Expression = List $Items ",", ""
 		Try {[ScriptBlock]::Create($Expression)} Catch {$PSCmdlet.WriteError($_); $Expression}
 	}
-} Set-Alias pson ConvertTo-Expression; Set-Alias ctex ConvertTo-Expression
-Set-Alias ConvertTo-Pson ConvertTo-Expression -Description "Stringifys an object to a PowerShell expression."
-Set-Alias ConvertFrom-Pson  Invoke-Expression -Description "Parses a PowerShell expression to an object."
+}; Set-Alias ctex ConvertTo-Expression
