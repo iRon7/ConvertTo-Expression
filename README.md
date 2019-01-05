@@ -129,36 +129,20 @@ Specifies how many IndentChars to write for each level in the hierarchy.
 `-IndentChar`  
 Specifies which character to use for indenting.
 
-`-TypePrefix`  
-Defines how the explicite the object type is being parsed:
+`-Strong`
+By default, the `ConvertTo-Expression` cmdlet will return a weakly typed
+expression which is best for transfing objects between differend
+PowerShell systems.
+The `-Strong` parameter will strickly define value types and objects
+in a way that they can still be read by same PowerShell system and
+PowerShell system with the same configuration (installed modules etc.).
 
-`-TypePrefix None`  
-No type information will be added to the (embedded) objects and
-values in the PowerShell expression. This means that objects
-and values will be parsed to one of the following data types
-when reading them back with `Invoke-Expression`: a numeric value,
-a `[String] ('...')`, an `[Array] (@(...))` or a
-`[HashTable] (@{...})`.
-
-`-TypePrefix Native`  
-The original type prefix is added to the (embedded) objects and
-values in the PowerShell expression. Note that most system
-(.Net) objects can’t be read back with `Invoke-Expression`, but
-option might help to reveal (embedded) object types and
-hierarchies.
-
-`-TypePrefix Cast` (Default)  
-The type prefix is only added to (embedded) objects and values
-when required and optimized for read back with
-Invoke-Expression by e.g. converting system (.Net) objects to
-PSCustomObject objects. Numeric values won't have a strong
-type and therefor parsed to the default type that fits the
-value when restored.
-
-`-TypePrefix Strong`
-All (embedded) objects and values will have an explicit type
-prefix optimized for read back with `Invoke-Expression` by e.g.
-converting system (.Net) objects to PSCustomObject objects.
+`-Explore`
+In explore mode, all type prefixes are omitted in the output expression
+(objects will cast to to hash tables). In case the `-Strong` parameter is
+also supplied, all *orginal* (.Net) type names are shown.
+The `-Explore` switch is usefull for exploring object hyrachies and data
+type, not for saving and transfering objects.
 
 `-NewLine`  
 Specifies which characters to use for a new line. The default is defined by
