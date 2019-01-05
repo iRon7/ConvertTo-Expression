@@ -129,7 +129,7 @@ Specifies how many IndentChars to write for each level in the hierarchy.
 `-IndentChar`  
 Specifies which character to use for indenting.
 
-`-Strong`
+`-Strong`  
 By default, the `ConvertTo-Expression` cmdlet will return a weakly typed
 expression which is best for transfing objects between differend
 PowerShell systems.
@@ -137,7 +137,7 @@ The `-Strong` parameter will strickly define value types and objects
 in a way that they can still be read by same PowerShell system and
 PowerShell system with the same configuration (installed modules etc.).
 
-`-Explore`
+`-Explore`  
 In explore mode, all type prefixes are omitted in the output expression
 (objects will cast to to hash tables). In case the `-Strong` parameter is
 also supplied, all *orginal* (.Net) type names are shown.
