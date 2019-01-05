@@ -80,7 +80,7 @@ Describe 'ConvertTo-Expression' {
 "@
 	}
 
-		It "casts type" {
+		It "default conversion" {
 			
 			$Expression = $Object | ConvertTo-Expression
 			
@@ -162,9 +162,9 @@ Describe 'ConvertTo-Expression' {
 			$Actual.DataTable.Name[1]    | Should -Be $Object.DataTable.Name[1]
 		}
 		
-		It "converts Strong type" {
+		It "converts strong type" {
 			
-			$Expression = $Object | ConvertTo-Expression -Type Strong
+			$Expression = $Object | ConvertTo-Expression -Strong
 			
 			$Actual = &$Expression
 			
@@ -267,11 +267,23 @@ Describe 'ConvertTo-Expression' {
 	
 	Context 'system objects' {
 
+		$WinInitProcess = Get-Process WinInit
+
 		It "convert (wininit) process" {
-		
-			$WinInitProcess = Get-Process WinInit
 
 			$Expression = $WinInitProcess | ConvertTo-Expression 
+			
+			$Actual = &$Expression
+			
+			$Actual.ProcessName | Should-BeEqualTo $WinInitProcess.ProcessName
+			($Actual.StartInfo.Environment | Where {$_.Key -eq "TEMP"}).Value | Should -Not -BeNullOrEmpty
+			($Actual.StartInfo.EnvironmentVariables | Where {$_.Key -eq "TEMP"}).Value | Should -Not -BeNullOrEmpty
+			
+		}
+
+		It "convert (wininit) process (Strong)" {
+
+			$Expression = $WinInitProcess | ConvertTo-Expression -Strong
 			
 			$Actual = &$Expression
 			
@@ -291,7 +303,43 @@ Describe 'ConvertTo-Expression' {
 			$Actual.MyCommand.Name | Should -Be $MyInvocation.MyCommand.Name
 			
 		}
+
+		It "convert MyInvocation (Strong)" {
+		
+
+			$Expression = $MyInvocation | ConvertTo-Expression -Strong
+			
+			$Actual = &$Expression
+			
+			$Actual.MyCommand.Name | Should -Be $MyInvocation.MyCommand.Name
+			
+		}
 	}
+	
+	Context 'cast types' {
+		$Ordered = [Ordered]@{a = 1; b = 2}
+		
+		It "default" {
+			$Expression = $Ordered | ConvertTo-Expression -Expand 0
+			"$Expression"  | Should -Be "[Ordered]@{'a' = 1; 'b' = 2}"
+		}
+		
+		It "strong" {
+			$Expression = $Ordered | ConvertTo-Expression -Expand 0 -Strong
+			"$Expression"  | Should -Be "[Ordered]@{'a' = [int32]1; 'b' = [int32]2}"
+		}
+	
+		It "explore" {
+			$Expression = $Ordered | ConvertTo-Expression -Expand 0 -Explore
+			"$Expression"  | Should -Be "@{'a' = 1; 'b' = 2}"
+		}
+		
+		It "explore strong" {
+			$Expression = $Ordered | ConvertTo-Expression -Expand 0 -Explore -Strong
+			"$Expression"  | Should -Be "[System.Collections.Specialized.OrderedDictionary]@{'a' = [int32]1; 'b' = [int32]2}"
+		}
+	}
+
 	Context 'special objects' {
 
 		Test {'Test'}
@@ -316,4 +364,3 @@ Describe 'ConvertTo-Expression' {
 		
 	}
 }
-
