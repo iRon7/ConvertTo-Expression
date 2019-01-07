@@ -321,22 +321,22 @@ Describe 'ConvertTo-Expression' {
 		
 		It "default" {
 			$Expression = $Ordered | ConvertTo-Expression -Expand 0
-			"$Expression"  | Should -Be "[Ordered]@{'a' = 1; 'b' = 2}"
+			"$Expression" | Should -Be "[Ordered]@{'a' = 1; 'b' = 2}"
 		}
 		
 		It "strong" {
 			$Expression = $Ordered | ConvertTo-Expression -Expand 0 -Strong
-			"$Expression"  | Should -Be "[Ordered]@{'a' = [int32]1; 'b' = [int32]2}"
+			"$Expression" | Should -Be "[Ordered]@{'a' = [int32]1; 'b' = [int32]2}"
 		}
 	
 		It "explore" {
 			$Expression = $Ordered | ConvertTo-Expression -Expand 0 -Explore
-			"$Expression"  | Should -Be "@{'a' = 1; 'b' = 2}"
+			"$Expression" | Should -Be "@{'a' = 1; 'b' = 2}"
 		}
 		
 		It "explore strong" {
 			$Expression = $Ordered | ConvertTo-Expression -Expand 0 -Explore -Strong
-			"$Expression"  | Should -Be "[System.Collections.Specialized.OrderedDictionary]@{'a' = [int32]1; 'b' = [int32]2}"
+			"$Expression" | Should -Be "[System.Collections.Specialized.OrderedDictionary]@{'a' = [int32]1; 'b' = [int32]2}"
 		}
 	}
 
@@ -362,5 +362,44 @@ Describe 'ConvertTo-Expression' {
 		Test {@{'a' = 1; 'b' = 2}}
 		Test {@{'a' = 1, 2; 'b' = 3}}
 		
+	}
+	
+	Context 'recursive references' {
+	
+		It "recursive hash table" {
+			$Object = @{
+				Name = "Tree"
+				Parent = @{
+					Name = "Parent"
+					Child = @{
+						Name = "Child"
+					}
+				}
+			}
+			$Object.Parent.Child.Parent = $Object.Parent
+			$Expression = $Object | ConvertTo-Expression
+			
+			$Actual = &$Expression
+			
+			$Actual.Parent.Child.Name | Should -Be $Object.Parent.Child.Name
+	
+		}
+
+		It "recursive custom object" {
+			$Parent = [PSCustomObject]@{
+				Name = "Parent"
+			}
+			$Child = [PSCustomObject]@{
+				Name = "Child"
+			}
+			$Parent | Add-Member Child $Child
+			$Child | Add-Member Parent $Parent
+			
+			$Expression = $Parent | ConvertTo-Expression
+			
+			$Actual = &$Expression
+			
+			$Actual.Child.Parent.Name | Should -Be $Object.Child.Parent.Name
+		}
 	}
 }
