@@ -1,5 +1,5 @@
 <#PSScriptInfo
-.VERSION 3.1.0
+.VERSION 3.1.1
 .GUID 5f167621-6abe-4153-a26c-f643e1716720
 .AUTHOR Ronald Bode (iRon)
 .DESCRIPTION Stringifys an object to a PowerShell expression (PSON, PowerShell Object Notation).
@@ -162,7 +162,10 @@ Function ConvertTo-Expression {
 	Begin {
 		$NumberTypes = @{}; "byte", "int", "int16", "int32", "int64", "sbyte", "uint", "uint16", "uint32", "uint64", "float", "single", "double", "long", "decimal", "IntPtr" | ForEach-Object {$NumberTypes[$_] = $Null}
 		$CastAccelerators = @{}; [PSObject].Assembly.GetType("System.Management.Automation.TypeAccelerators")::get.GetEnumerator() | ForEach-Object {$CastAccelerators[$_.Value] = $_.Key}
-		Function PathName([Array]$Path = @()) {($Path | ForEach-Object {If ($_ -is [Int]) {"[$_]"} Else {".$_"}}) -Join ''}
+		Function ReferenceName ($Object, $Path) {
+			$Name = ForEach ($e in $References.GetEnumerator()) {If ([object]::ReferenceEquals($e.Value, $Object)) {$e.Name; Break}}
+			If ($Null -eq $Name) {$References[($Path | ForEach-Object {If ($_ -is [Int]) {"[$_]"} Else {".$_"}}) -Join ''] = $Object} Else {$Name}
+		}
 		Function List([String[]]$Items, [String[]]$Separator = @(), [String[]]$Open = @(), [String[]]$Close = @(), [Int]$Indent) {
 			If (($Expand -le 0) -or (@($Items).Count -le 1)) {$Open[0] + ($Items -Join "$($Separator[0])$Space") + $Close[0]}
 			Else {
@@ -173,10 +176,9 @@ Function ConvertTo-Expression {
 		}
 		Function Stringify($Object, [Int]$Expand, [Array]$Path = @()) {
 			Function Serialize ($Keys) {
-				Function Iterate($Object, $Name, [Switch]$ListItem) {
+				Function Iterate($Object, $Name) {
 					If ($Path.Count -lt $Depth) {Stringify $Object -Expand ($Expand - ($Expand -gt 0)) -Path ($Path + $Name)} Else {"'...'"}
 				}
-				$Refs[$HashCode] = $Path
 				If ($Null -ne $Keys) {
 					$Names = If ($Keys -eq $True) {$Object.Keys} Else {
 						(&{ForEach ($Name in ($Keys | Select-Object -Expand "Name")) {$Object.PSObject.Properties |
@@ -184,10 +186,10 @@ Function ConvertTo-Expression {
 					}
 					List ($Names | ForEach-Object {"'$_'$Space=$Space" + (Iterate $Object.$_ "$_")}) ";", "" "@{" "}" $Path.Count
 				} Else {
-					$i = 0; $Array = $Object | ForEach-Object {Iterate $_ $i++ -ListItem}
+					$i = 0; $Array = $Object | ForEach-Object {Iterate $_ $i; $i++}
 					If ($Array -is [String] -and $Object[0] -is [Array]) {$Array = ",$Array"}
 					If ($Array.Count -le 1) {List $Array "," "@(" ")" $Path.Count}
-					ElseIf ($ListItem) {List $Array "," "(" ")" $Path.Count}
+					ElseIf (!$Path.Count -or $Path[-1] -is [Int]) {List $Array "," "(" ")" $Path.Count}
 					Else {List $Array "," "", "(" "", ")" $Path.Count}
 				}
 			}
@@ -205,8 +207,7 @@ Function ConvertTo-Expression {
 				ElseIf ($Object -is [Xml]) {$Parse = $Cast; $SW = New-Object System.IO.StringWriter; $XW = New-Object System.Xml.XmlTextWriter $SW
 					$XW.Formatting = If ($Expand -le 0) {"None"} Else {"Indented"}; $XW.Indentation = $Indentation; $XW.IndentChar = $IndentChar
 					$Object.WriteContentTo($XW); If ($Expand -le 0) {"'$SW'"} Else {"@'$NewLine$SW$NewLine'@$NewLine"}}
-				Else {$HashCode = $Object.GetHashCode()
-					If ($HashCode -and $Refs.ContainsKey($HashCode)) {'$_' + (PathName $Refs[$HashCode])}
+				Else {$ReferenceName = ReferenceName $Object $Path; If ($ReferenceName) {'$_' + $ReferenceName}
 					ElseIf ($Type.Name -eq "DataTable") {$Convert = "Array"; Serialize}
 					ElseIf ($Type.Name -eq "DictionaryEntry") {$Parse = "PSCustomObject"; Serialize ($Object | Get-Member -Type Property)}
 					ElseIf ($Type.Name -like "KeyValuePair*") {$Parse = "PSCustomObject"; Serialize ($Object | Get-Member -Type Property)}
@@ -223,7 +224,7 @@ Function ConvertTo-Expression {
 			}
 		}
 		$Space = If ($Expand -ge 0) {" "} Else {""}; $Tab = $IndentChar * $Indentation
-		$ListItem = $True; $Items = @(); $Refs = @{}
+		$Items = @(); $References = @{}
 	}
 	Process {
 		If (!$PSCmdlet.MyInvocation.ExpectingInput -and $Object -is [Array] -and $Object.Count) {
