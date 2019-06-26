@@ -1,5 +1,5 @@
 <#PSScriptInfo
-.VERSION 3.1.1
+.VERSION 3.2.9
 .GUID 5f167621-6abe-4153-a26c-f643e1716720
 .AUTHOR Ronald Bode (iRon)
 .DESCRIPTION Stringifys an object to a PowerShell expression (PSON, PowerShell Object Notation).
@@ -43,6 +43,16 @@ Function ConvertTo-Expression {
 
 			$Object | ConvertTo-Expression | Out-File .\Expression.ps1
 			$Object = . .\Expression.ps1
+
+	.INPUTS
+		Any. Each objects provided through the pipeline will converted to an
+		expression. To concatinate all piped objects in a single expression,
+		use the unary comma operator, like: ,Object | ConvertTo-Expression
+
+	.OUTPUTS
+		System.Management.Automation.ScriptBlock. ConvertTo-Expression returns
+		a PowerShell expression (ScriptBlock) which default display output is
+		a Sytem.String.
 
 	.PARAMETER InputObject
 		Specifies the objects to convert to a PowerShell expression. Enter a
@@ -89,29 +99,29 @@ Function ConvertTo-Expression {
 
 	.EXAMPLE
 
-		PS C:\> $Calendar = (Get-UICulture).Calendar | ConvertTo-Expression
-
-		PS C:\> $Calendar
+		PS C:\> (Get-UICulture).Calendar | ConvertTo-Expression
 
 		[PSCustomObject]@{
-				'AlgorithmType' = 'SolarCalendar'
-				'CalendarType' = 'Localized'
-				'Eras' = @(1)
-				'IsReadOnly' = $False
-				'MaxSupportedDateTime' = [DateTime]'9999-12-31T23:59:59.9999999'
-				'MinSupportedDateTime' = [DateTime]'0001-01-01T00:00:00.0000000'
-				'TwoDigitYearMax' = 2029
+			'AlgorithmType' = 1
+			'CalendarType' = 1
+			'Eras' = ,1
+			'IsReadOnly' = $False
+			'MaxSupportedDateTime' = [datetime]'9999-12-31T23:59:59.9999999'
+			'MinSupportedDateTime' = [datetime]'0001-01-01T00:00:00.0000000'
+			'TwoDigitYearMax' = 2029
 		}
 
-		PS C:\> &$Calendar
+		PS C:\> (Get-UICulture).Calendar | ConvertTo-Expression -Strong
 
-		AlgorithmType        : SolarCalendar
-		CalendarType         : Localized
-		Eras                 : {1}
-		IsReadOnly           : False
-		MaxSupportedDateTime : 9999-12-31 11:59:59 PM
-		MinSupportedDateTime : 0001-01-01 12:00:00 AM
-		TwoDigitYearMax      : 2029
+		[HashTable]@{
+			'AlgorithmType' = [System.Globalization.CalendarAlgorithmType]'SolarCalendar'
+			'CalendarType' = [System.Globalization.GregorianCalendarTypes]'Localized'
+			'Eras' = ,[int32]1
+			'IsReadOnly' = [bool]$False
+			'MaxSupportedDateTime' = [datetime]'9999-12-31T23:59:59.9999999'
+			'MinSupportedDateTime' = [datetime]'0001-01-01T00:00:00.0000000'
+			'TwoDigitYearMax' = [int32]2029
+		}
 
 	.EXAMPLE
 
@@ -156,84 +166,94 @@ Function ConvertTo-Expression {
 #>
 	[CmdletBinding()][OutputType([ScriptBlock])]Param (
 		[Parameter(ValueFromPipeLine = $True)][Alias('InputObject')]$Object, [Int]$Depth = 9, [Int]$Expand = $Depth,
-		[Int]$Indentation = 1, [String]$IndentChar = "`t", [Switch]$Strong, [Switch]$Explore,
+		[Int]$Indentation = 1, [String]$IndentChar = "`t", [Switch]$Strong, [Switch]$Explore, [Switch]$Concatenate,
 		[String]$NewLine = [System.Environment]::NewLine
 	)
 	Begin {
-		$NumberTypes = @{}; "byte", "int", "int16", "int32", "int64", "sbyte", "uint", "uint16", "uint32", "uint64", "float", "single", "double", "long", "decimal", "IntPtr" | ForEach-Object {$NumberTypes[$_] = $Null}
-		$CastAccelerators = @{}; [PSObject].Assembly.GetType("System.Management.Automation.TypeAccelerators")::get.GetEnumerator() | ForEach-Object {$CastAccelerators[$_.Value] = $_.Key}
-		Function ReferenceName ($Object, $Path) {
-			$Name = ForEach ($e in $References.GetEnumerator()) {If ([object]::ReferenceEquals($e.Value, $Object)) {$e.Name; Break}}
-			If ($Null -eq $Name) {$References[($Path | ForEach-Object {If ($_ -is [Int]) {"[$_]"} Else {".$_"}}) -Join ''] = $Object} Else {$Name}
-		}
-		Function List([String[]]$Items, [String[]]$Separator = @(), [String[]]$Open = @(), [String[]]$Close = @(), [Int]$Indent) {
-			If (($Expand -le 0) -or (@($Items).Count -le 1)) {$Open[0] + ($Items -Join "$($Separator[0])$Space") + $Close[0]}
-			Else {
-				$Lead = "$NewLine$($Tab * $Indent)"
-				If ($Open[-1]) {"$($Open[-1])$Lead$Tab$($Items -Join $($Separator[-1] + $Lead + $Tab))$Lead$($Close[-1])"}
-				Else {$Items -Join "$($Separator[-1])$Lead"}
-			}
-		}
-		Function Stringify($Object, [Int]$Expand, [Array]$Path = @()) {
-			Function Serialize ($Keys) {
-				Function Iterate($Object, $Name) {
-					If ($Path.Count -lt $Depth) {Stringify $Object -Expand ($Expand - ($Expand -gt 0)) -Path ($Path + $Name)} Else {"'...'"}
+		If (!$PSCmdlet.MyInvocation.ExpectingInput) {If ($Concatenate) {Write-Warning 'The concatenate switch only applies to pipeline input'} Else {$Concatenate = $True}}
+		$NumberTypes = @{}; 'byte', 'int', 'int16', 'int32', 'int64', 'sbyte', 'uint', 'uint16', 'uint32', 'uint64', 'float', 'single', 'double', 'long', 'decimal', 'IntPtr' | ForEach-Object {$NumberTypes[$_] = $Null}
+		$Tab = $IndentChar * $Indentation
+		Function Serialize($Object, $Iteration, $Indent) {
+			Function Quote ([String]$Item) {If ($Item -Match '[\r\n]') {"@'$NewLine$Item$NewLine'@$NewLine"} Else {"'$($Item.Replace('''', ''''''))'"}}
+			Function Stringify ($Item, $Cast = $Type) {
+				$Explicit = $PSBoundParameters.ContainsKey('Cast')
+				Function Prefix {If ($Explore) {If ($Strong) {"[$Type]"}} ElseIf ($Strong -or $Explicit) {If ($Cast) {"[$Cast]"}}}
+				Function Iterate($Item, [Switch]$ListItem, [Switch]$Level) {
+					If ($Iteration -lt $Depth) {Serialize $Item -Iteration ($Iteration + 1) -Indent ($Indent + 1 - [Int][Bool]$Level)} Else {"'...'"}
 				}
-				If ($Null -ne $Keys) {
-					$Names = If ($Keys -eq $True) {$Object.Keys} Else {
-						(&{ForEach ($Name in ($Keys | Select-Object -Expand "Name")) {$Object.PSObject.Properties |
-						Where-Object {$_.Name -eq $Name -and $_.IsGettable} | Select-Object -Expand "Name"}})
+				If ($Item -is [String]) {(Prefix) + $Item} Else {
+					$List, $Members = $Null; $Methods = $Item.PSObject.Methods.Name
+					If ($Methods -Contains 'GetEnumerator') {
+						If ($Methods -Contains 'get_Keys' -and $Methods -Contains 'get_Values') {
+							$List = [Ordered]@{}; $Item.get_Keys() | ForEach-Object {$List[$_] = Iterate $Item[$_]}
+						} Else {
+							$List = @($Item | ForEach-Object {Iterate $_ -ListItem -Level:($Count -eq 1 -or ($Null -eq $Indent -and !$Explore -and !$Strong))})
+						}
+					} Else {
+						$Members = $Item | Get-Member -Type Property; If (!$Members) {$Members = $Item | Get-Member -Type NoteProperty}
+						If ($Members) {
+							$List = [Ordered]@{}; ForEach ($Member in $Members) {
+								$Item.PSObject.Properties | Where-Object {$_.Name -eq $Member.Name -and $_.IsGettable} | ForEach-Object {$List[$_.Name] = Iterate $_.Value}
+							}
+						}
 					}
-					List ($Names | ForEach-Object {"'$_'$Space=$Space" + (Iterate $Object.$_ "$_")}) ";", "" "@{" "}" $Path.Count
-				} Else {
-					$i = 0; $Array = $Object | ForEach-Object {Iterate $_ $i; $i++}
-					If ($Array -is [String] -and $Object[0] -is [Array]) {$Array = ",$Array"}
-					If ($Array.Count -le 1) {List $Array "," "@(" ")" $Path.Count}
-					ElseIf (!$Path.Count -or $Path[-1] -is [Int]) {List $Array "," "(" ")" $Path.Count}
-					Else {List $Array "," "", "(" "", ")" $Path.Count}
+					If ($List -is [Array]) {
+						If (!$Explicit) {$Cast = 'array'}
+						If (!$List.Count) {(Prefix) + '@()'}
+						ElseIf ($List.Count -eq 1) {
+							If ($Strong) {(Prefix) + "$List"}
+							ElseIf ($ListItem) {"(,$List)"}
+							Else {",$List"}
+						}
+						ElseIf ($Indent -ge $Expand - 1) {
+							$Content = If ($Expand -ge 0) {$List -Join ', '} Else {$List -Join ','}
+							If ($ListItem -or $Strong) {(Prefix) + "($Content)"} Else {$Content}
+						}
+						ElseIf ($Null -eq $Indent -and !$Strong) {$List -Join ",$NewLine"}
+						Else {
+							$LineFeed = $NewLine + ($Tab * $Indent)
+							$Content = "$LineFeed$Tab" + ($List -Join ",$LineFeed$Tab")
+							If ($ListItem -or $Strong) {(Prefix) + "($Content$LineFeed)"} Else {$Content}
+						}
+					} ElseIf ($List -is [System.Collections.Specialized.OrderedDictionary]) {
+						If (!$Explicit) {If ($Members) {$Explicit = $True; $Cast = 'pscustomobject'} Else {$Cast = 'hashtable'}}
+						If (!$List.Count) {(Prefix) + '@{}'}
+						ElseIf ($Expand -lt 0) {(Prefix) + '@{' + (($List.get_Keys() | ForEach-Object {"'$_'=$($List.$_)"}) -Join ';') + '}'}
+						ElseIf ($List.Count -eq 1 -or $Indent -ge $Expand - 1) {
+							(Prefix) + '@{' + (($List.get_Keys() | ForEach-Object {"'$_' = $($List.$_)"}) -Join '; ') + '}'
+						} Else {
+							$LineFeed = $NewLine + ($Tab * $Indent)
+							(Prefix) + "@{$LineFeed$Tab" + (($List.get_Keys() | ForEach-Object {
+								If (($List.$_)[0] -NotMatch '[\S]') {"'$_' =$($List.$_)".TrimEnd()} Else {"'$_' = $($List.$_)".TrimEnd()}
+							}) -Join "$LineFeed$Tab") + "$LineFeed}"
+						}
+					}
+					Else {(Prefix) + ",$List"}
 				}
 			}
 			If ($Null -eq $Object) {"`$Null"} Else {
-				$Type = $Object.GetType(); $Cast = $CastAccelerators.$Type; If (!$Cast) {$Cast = $Type.FullName}; $Convert = $Cast; $Parse = $Null;
-				$Enumerator = $Object.GetEnumerator.OverloadDefinitions
-				$DTO = If ($Object -is [Boolean]) {If ($Object) {'$True'} Else {'$False'}}
-				ElseIf ($NumberTypes.ContainsKey($Type.Name)) {"$Object"}
-				ElseIf ($Object -is [String]) {If ($Object -Match "[`r`n]") {"@'$NewLine$Object$NewLine'@$NewLine"} Else {"'$($Object.Replace('''', ''''''))'"}}
-				ElseIf ($Object -is [DateTime]) {$Parse = $Cast; "'$($Object.ToString('o'))'"}
-				ElseIf ($Object -is [Version]) {$Parse = $Cast; "'$Object'"}
-				ElseIf ($Object -is [Enum]) {If ($Strong) {$Parse = $Cast; "'$Object'"} Else {"$(0 + $Object)"}}
-				ElseIf ($Object -is [ScriptBlock]) {If ($Object -Match "\#.*?$") {"{$Object$NewLine}"} Else {"{$Object}"}}
-				ElseIf ($Object -is [RuntimeTypeHandle]) {$Object.Value}
-				ElseIf ($Object -is [Xml]) {$Parse = $Cast; $SW = New-Object System.IO.StringWriter; $XW = New-Object System.Xml.XmlTextWriter $SW
-					$XW.Formatting = If ($Expand -le 0) {"None"} Else {"Indented"}; $XW.Indentation = $Indentation; $XW.IndentChar = $IndentChar
-					$Object.WriteContentTo($XW); If ($Expand -le 0) {"'$SW'"} Else {"@'$NewLine$SW$NewLine'@$NewLine"}}
-				Else {$ReferenceName = ReferenceName $Object $Path; If ($ReferenceName) {'$_' + $ReferenceName}
-					ElseIf ($Type.Name -eq "DataTable") {$Convert = "Array"; Serialize}
-					ElseIf ($Type.Name -eq "DictionaryEntry") {$Parse = "PSCustomObject"; Serialize ($Object | Get-Member -Type Property)}
-					ElseIf ($Type.Name -like "KeyValuePair*") {$Parse = "PSCustomObject"; Serialize ($Object | Get-Member -Type Property)}
-					ElseIf ($Type.Name -eq "OrderedDictionary") {$Parse = "Ordered"; Serialize $True}
-					ElseIf ($Enumerator -match "[\W]IDictionaryEnumerator[\W]") {$Convert = "Hashtable"; Serialize $True}
-					ElseIf ($Enumerator -match "[\W]IEnumerator[\W]") {$Convert = "Array"; Serialize}
-					ElseIf ($Object -is [ValueType]) {$Parse = $Cast; "'$($Object)'"}
-					Else {$Properties = $Object | Get-Member -Type Property; If (!$Properties) {$Properties = $Object | Get-Member -Type NoteProperty}
-						If ($Properties) {$Parse = "PSCustomObject"; Serialize $Properties} Else {"'$Object'"}
-					}
-				}
-				If ($Strong) {If ($Explore) {"[$Cast]$DTO"} Else {If ($Parse) {"[$Parse]$DTO"} Else {"[$Convert]$DTO"}}}
-				Else {If ($Explore) {"$DTO"} Else {If ($Parse) {"[$Parse]$DTO"} Else {"$DTO"}}}
+				$Type = $Object.GetType()
+				If ($Object -is [Boolean]) {If ($Object) {Stringify '$True'} Else {Stringify '$False'}}
+				ElseIf ($NumberTypes.ContainsKey($Type.Name)) {Stringify "$Object"}
+				ElseIf ($Object -is [String]) {Stringify (Quote $Object)}
+				ElseIf ($Object -is [DateTime]) {Stringify "'$($Object.ToString('o'))'" $Type}
+				ElseIf ($Object -is [Version]) {Stringify "'$Object'" $Type}
+				ElseIf ($Object -is [Enum]) {If ($Strong) {Stringify "'$Object'" $Type} Else {Stringify "$(0 + $Object)"}}
+				ElseIf ($Object -is [ScriptBlock]) {If ($Object -Match "\#.*?$") {Stringify "{$Object$NewLine}"} Else {Stringify "{$Object}"}}
+				ElseIf ($Object -is [RuntimeTypeHandle]) {Stringify "$($Object.Value)"}
+				ElseIf ($Object -is [Xml]) {
+					$SW = New-Object System.IO.StringWriter; $XW = New-Object System.Xml.XmlTextWriter $SW
+					$XW.Formatting = If ($Indent -lt $Expand - 1) {'Indented'} Else {'None'}
+					$XW.Indentation = $Indentation; $XW.IndentChar = $IndentChar; $Object.WriteContentTo($XW); Stringify (Quote $SW) $Type}
+				ElseIf ($Object -is [System.Data.DataTable]) {Stringify $Object.Rows}
+				ElseIf ($Type.Name -eq "OrderedDictionary") {Stringify $Object ordered}
+				ElseIf ($Object -is [ValueType]) {Stringify "'$($Object)'" $Type}
+				Else {Stringify $Object}
 			}
 		}
-		$Space = If ($Expand -ge 0) {" "} Else {""}; $Tab = $IndentChar * $Indentation
-		$Items = @(); $References = @{}
 	}
 	Process {
-		If (!$PSCmdlet.MyInvocation.ExpectingInput -and $Object -is [Array] -and $Object.Count) {
-			$i = 0; $Items = @($Object | ForEach-Object {Stringify $_ -Expand $Expand}); $ContainsArray = $Object[0] -is [Array]
-		} Else {$Items += Stringify $Object -Expand $Expand; $ContainsArray = $Object -is [Array]}
-	}
-	End {
-		If ($Items.Count -le 1 -and $ContainsArray) {$Items = "," + $Items}
-		$Expression = List $Items ",", ""
+		$Expression = (Serialize $Object).TrimEnd()
 		Try {[ScriptBlock]::Create($Expression)} Catch {$PSCmdlet.WriteError($_); $Expression}
 	}
 }; Set-Alias ctex ConvertTo-Expression
