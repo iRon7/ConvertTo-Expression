@@ -41,12 +41,24 @@
 2.7.0     2018-08-29 Ronald Bode Extended numeric type list for (PSv2) typecasting
 2.7.0     2018-08-29 Ronald Bode Casting DictionaryEntries and KeyValuePairs to PSObjects (instead of hashtables)
 2.7.1     2018-08-29 Ronald Bode Only add a newline to a function when the last line contains a #
-2.7.2     2018-08-29 Ronald Bode Default empty type (typecast) for ValueTypes.
+2.7.2     2018-08-29 Ronald Bode Default empty type (typecast) for ValueTypes
 2.7.3     2018-11-16 Ronald Bode Changed [PSObject] to [PSCustomObject] type
 2.7.4     2018-11-28 Ronald Bode Fixed IntPtr output type
 2.7.5     2018-11-29 Ronald Bode Preventing nested array flattening by adding a comma
 3.0.0     2018-11-29 Ronald Bode Minimized root top (array) expression top
 3.0.1     2018-11-30 Ronald Bode Minimized all array expressions (only use @ sign and brackets were required)
-3.0.2     2018-12-14 Ronald Bode Fixed PSScript Analizer PSUseDeclaredVarsMoreThanAssignment issue
+3.0.2     2018-12-14 Ronald Bode Fixed PSScript Analyzer PSUseDeclaredVarsMoreThanAssignment issue
 3.0.3     2018-12-14 Ronald Bode Renamed option: -TypePrefix Strict to: -TypePrefix Strong
-3.0.4     2018-12-14 Ronald Bode Cut off fcyclic references with: `[Ref]...` (where the number of dots represents the parent level)
+3.0.4     2018-12-14 Ronald Bode Cut off recurring references with: $Self (followed by the concerned number of .Parents properties)
+3.0.5     2019-01-05 Ronald Bode Cut off recurring references with path to the referenced property: $_[.<property>]
+3.0.9     2019-01-05 Ronald Bode Removed PSON references and aliases
+3.1.0     2019-01-05 Ronald Bode Replaced -TypePrefix parameter with -Strong and -Explore switch
+3.1.1     2019-01-07 Ronald Bode Fixed embedded PSCustomObject issue due to recurring reference tracking
+3.2.0     2019-05-14 Ronald Bode Recode better recognising object containers
+3.2.1     2019-05-21 Ronald Bode Using unary comma operator
+3.2.2     2019-05-21 Ronald Bode List arrays without brackets where possible
+3.2.3     2019-05-28 Ronald Bode Removed extra linefeed after here string
+3.2.5     2019-06-04 Ronald Bode Convert arrays of DictionaryEntries and arrays of KeyValuePairs to HashTable
+3.2.7     2019-06-11 Ronald Bode Used PowerShell Accelerators rather than .Net
+3.2.8     2019-06-18 Ronald Bode Handling streamed object as individual objects
+3.2.9     2019-06-25 Ronald Bode No trailing space in any lines
