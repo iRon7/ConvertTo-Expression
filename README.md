@@ -29,29 +29,29 @@ $Object = . .\Expression.ps1
 Convert a Calendar object to a PowerShell expression:
 
 ```powershell
-PS C:\> $Calendar = (Get-UICulture).Calendar | ConvertTo-Expression
+PS C:\> (Get-UICulture).Calendar | ConvertTo-Expression
 
-PS C:\> $Calendar
-
-[PSCustomObject]@{
-		'AlgorithmType' = 'SolarCalendar'
-		'CalendarType' = 'Localized'
-		'Eras' = @(1)
-		'IsReadOnly' = $False
-		'MaxSupportedDateTime' = [DateTime]'9999-12-31T23:59:59.9999999'
-		'MinSupportedDateTime' = [DateTime]'0001-01-01T00:00:00.0000000'
-		'TwoDigitYearMax' = 2029
+[pscustomobject]@{
+	'AlgorithmType' = 1
+	'CalendarType' = 1
+	'Eras' = ,1
+	'IsReadOnly' = $False
+	'MaxSupportedDateTime' = [datetime]'9999-12-31T23:59:59.9999999'
+	'MinSupportedDateTime' = [datetime]'0001-01-01T00:00:00.0000000'
+	'TwoDigitYearMax' = 2029
 }
 
-PS C:\> &$Calendar
+PS C:\> (Get-UICulture).Calendar | ConvertTo-Expression -Strong
 
-AlgorithmType        : SolarCalendar
-CalendarType         : Localized
-Eras                 : {1}
-IsReadOnly           : False
-MaxSupportedDateTime : 9999-12-31 11:59:59 PM
-MinSupportedDateTime : 0001-01-01 12:00:00 AM
-TwoDigitYearMax      : 2029
+[pscustomobject]@{
+	'AlgorithmType' = [System.Globalization.CalendarAlgorithmType]'SolarCalendar'
+	'CalendarType' = [System.Globalization.GregorianCalendarTypes]'Localized'
+	'Eras' = [array][int]1
+	'IsReadOnly' = [bool]$False
+	'MaxSupportedDateTime' = [datetime]'9999-12-31T23:59:59.9999999'
+	'MinSupportedDateTime' = [datetime]'0001-01-01T00:00:00.0000000'
+	'TwoDigitYearMax' = [int]2029
+}
 ```
 
 Save an object in a file and to restore it later:
@@ -98,6 +98,15 @@ Reveal complex object hierarchies:
 ```powershell
 PS C:\>Get-Host | ConvertTo-Expression -Depth 4
 ```
+## Inputs
+Any. Each objects provided through the pipeline will converted to an
+expression. To concatinate all piped objects in a single expression,
+use the unary comma operator, like: ,Object | ConvertTo-Expression
+
+## Outputs
+System.Management.Automation.ScriptBlock. ConvertTo-Expression returns
+a PowerShell expression (ScriptBlock) which default display output is
+a Sytem.String.
 
 ## Parameters 
 
