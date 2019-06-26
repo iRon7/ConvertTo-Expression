@@ -7,12 +7,11 @@ Function Should-BeEqualTo ($Value2, [Parameter(ValueFromPipeLine = $True)]$Value
 	$Value1 | Should -BeOfType $Value2.GetType().Name
 }
 
-Function Test ([ScriptBlock]$Expression) {
-	Invoke-Expression "`$Object = $Expression"
-	It "ConvertTo-Expression ($Expression)" {ConvertTo-Expression ($Object) -Expand 0 | Should -Be "$Expression"}
-	It "$Expression | ConvertTo-Expression" {$Object | ConvertTo-Expression -Expand 0 | Should -Be "$Expression"}
+Function Test-Format ([String]$Expression, [Switch]$Strong, [Int]$Expand = 9) {
+	$Object = &([ScriptBlock]::Create("$Expression"))
+	$Actual = ConvertTo-Expression $Object -Strong:$Strong -Expand $Expand
+	It "$Expression" {"$Actual" | Should -Be "$Expression"}
 }
-
 
 Describe 'ConvertTo-Expression' {
 	
@@ -25,14 +24,15 @@ Describe 'ConvertTo-Expression' {
 	Context 'custom object' {
 
 	$DataTable = New-Object Data.DataTable
-	$DataColumn = New-Object Data.DataColumn
-	$DataColumn.ColumnName = "Name"
-	$DataTable.Columns.Add($DataColumn)
+	$Null = $DataTable.Columns.Add((New-Object Data.DataColumn 'Column1'), [String])
+	$Null = $DataTable.Columns.Add((New-Object Data.DataColumn 'Column2'), [Int])
 	$DataRow = $DataTable.NewRow()
-	$DataRow.Item("Name") = "Hello"
+	$DataRow.Item('Column1') = "A"
+	$DataRow.Item('Column2') = 1
 	$DataTable.Rows.Add($DataRow)
 	$DataRow = $DataTable.NewRow()
-	$DataRow.Item("Name") = "World"
+	$DataRow.Item('Column1') = "B"
+	$DataRow.Item('Column2') = 2
 	$DataTable.Rows.Add($DataRow)
 
 	$Object = @{
@@ -117,10 +117,12 @@ Describe 'ConvertTo-Expression' {
 			$Actual.Object.Name          | Should -Be $Object.Object.Name
 			$Actual.Object.Value         | Should -Be $Object.Object.Value
 			$Actual.Object.Group         | Should -Be $Object.Object.Group
-			$Actual.DataTable.Name[0]    | Should -Be $Object.DataTable.Name[0]
-			$Actual.DataTable.Name[1]    | Should -Be $Object.DataTable.Name[1]
+			$Actual.DataTable.Column1[0] | Should -Be $Object.DataTable.Column1[0]
+			$Actual.DataTable.Column1[1] | Should -Be $Object.DataTable.Column1[1]
+			$Actual.DataTable.Column2[0] | Should -Be $Object.DataTable.Column2[0]
+			$Actual.DataTable.Column2[1] | Should -Be $Object.DataTable.Column2[1]
 		}
-		
+
 		It "compress" {
 			
 			$Expression = $Object | ConvertTo-Expression -Expand -1
@@ -158,8 +160,10 @@ Describe 'ConvertTo-Expression' {
 			$Actual.Object.Name          | Should -Be $Object.Object.Name
 			$Actual.Object.Value         | Should -Be $Object.Object.Value
 			$Actual.Object.Group         | Should -Be $Object.Object.Group
-			$Actual.DataTable.Name[0]    | Should -Be $Object.DataTable.Name[0]
-			$Actual.DataTable.Name[1]    | Should -Be $Object.DataTable.Name[1]
+			$Actual.DataTable.Column1[0] | Should -Be $Object.DataTable.Column1[0]
+			$Actual.DataTable.Column1[1] | Should -Be $Object.DataTable.Column1[1]
+			$Actual.DataTable.Column2[0] | Should -Be $Object.DataTable.Column2[0]
+			$Actual.DataTable.Column2[1] | Should -Be $Object.DataTable.Column2[1]
 		}
 		
 		It "converts strong type" {
@@ -199,8 +203,10 @@ Describe 'ConvertTo-Expression' {
 			$Actual.Object.Name          | Should -Be $Object.Object.Name
 			$Actual.Object.Value         | Should -Be $Object.Object.Value
 			$Actual.Object.Group         | Should -Be $Object.Object.Group
-			$Actual.DataTable.Name[0]    | Should -Be $Object.DataTable.Name[0]
-			$Actual.DataTable.Name[1]    | Should -Be $Object.DataTable.Name[1]
+			$Actual.DataTable.Column1[0] | Should -Be $Object.DataTable.Column1[0]
+			$Actual.DataTable.Column1[1] | Should -Be $Object.DataTable.Column1[1]
+			$Actual.DataTable.Column2[0] | Should -Be $Object.DataTable.Column2[0]
+			$Actual.DataTable.Column2[1] | Should -Be $Object.DataTable.Column2[1]
 			$Actual.XML                  | Should -BeOfType [System.Xml.XmlDocument]
 		}
 		
@@ -276,8 +282,8 @@ Describe 'ConvertTo-Expression' {
 			$Actual = &$Expression
 			
 			$Actual.ProcessName | Should-BeEqualTo $WinInitProcess.ProcessName
-			($Actual.StartInfo.Environment | Where {$_.Key -eq "TEMP"}).Value | Should -Not -BeNullOrEmpty
-			($Actual.StartInfo.EnvironmentVariables | Where {$_.Key -eq "TEMP"}).Value | Should -Not -BeNullOrEmpty
+			$Actual.StartInfo.Environment['TEMP'] | Should -Be $WinInitProcess.StartInfo.Environment['TEMP']
+			$Actual.StartInfo.EnvironmentVariables['TEMP'] | Should -Be $WinInitProcess.StartInfo.EnvironmentVariables['TEMP']
 			
 		}
 
@@ -288,8 +294,8 @@ Describe 'ConvertTo-Expression' {
 			$Actual = &$Expression
 			
 			$Actual.ProcessName | Should-BeEqualTo $WinInitProcess.ProcessName
-			($Actual.StartInfo.Environment | Where {$_.Key -eq "TEMP"}).Value | Should -Not -BeNullOrEmpty
-			($Actual.StartInfo.EnvironmentVariables | Where {$_.Key -eq "TEMP"}).Value | Should -Not -BeNullOrEmpty
+			$Actual.StartInfo.Environment['TEMP'] | Should -Be $WinInitProcess.StartInfo.Environment['TEMP']
+			$Actual.StartInfo.EnvironmentVariables['TEMP'] | Should -Be $WinInitProcess.StartInfo.EnvironmentVariables['TEMP']
 			
 		}
 
@@ -321,12 +327,12 @@ Describe 'ConvertTo-Expression' {
 		
 		It "default" {
 			$Expression = $Ordered | ConvertTo-Expression -Expand 0
-			"$Expression" | Should -Be "[Ordered]@{'a' = 1; 'b' = 2}"
+			"$Expression" | Should -Be "[ordered]@{'a' = 1; 'b' = 2}"
 		}
 		
 		It "strong" {
 			$Expression = $Ordered | ConvertTo-Expression -Expand 0 -Strong
-			"$Expression" | Should -Be "[Ordered]@{'a' = [int32]1; 'b' = [int32]2}"
+			"$Expression" | Should -Be "[ordered]@{'a' = [int]1; 'b' = [int]2}"
 		}
 	
 		It "explore" {
@@ -336,34 +342,715 @@ Describe 'ConvertTo-Expression' {
 		
 		It "explore strong" {
 			$Expression = $Ordered | ConvertTo-Expression -Expand 0 -Explore -Strong
-			"$Expression" | Should -Be "[System.Collections.Specialized.OrderedDictionary]@{'a' = [int32]1; 'b' = [int32]2}"
+			"$Expression" | Should -Be "[System.Collections.Specialized.OrderedDictionary]@{'a' = [int]1; 'b' = [int]2}"
 		}
 	}
 
-	Context 'special objects' {
+	Context 'default formatting' {
 
-		Test {'Test'}
-		Test {123}
-		Test {$Null}
-		Test {,@()}
-		Test {,@('Test')}
-		Test {,@($Null)}
-		Test {,@(,@())}
-		Test {,@(,@('Test'))}
-		Test {,@(,@($Null))}
-		Test {,(@(), @())}
-		Test {,(1, 2)}
-		Test {,('a', 'b')}
-		Test {,($Null, $False, $True)}
-		Test {,(@(1), @(2))}
-		Test {,(@('a'), @('b'))}
-		Test {,(@($Null), @($False), @($True))}
-		Test {@{}}
-		Test {@{'a' = 1; 'b' = 2}}
-		Test {@{'a' = 1, 2; 'b' = 3}}
+		Test-Format "1"
+
+		Test-Format "'One'"
+
+#		Test-Format ",'One'"
 		
+		Test-Format @"
+'One',
+'Two',
+'Three',
+'Four'
+"@
+
+		Test-Format @"
+'One',
+(,'Two'),
+'Three',
+'Four'
+"@
+
+		Test-Format @"
+'One',
+(
+	'Two',
+	'Three'
+),
+'Four'
+"@
+
+		Test-Format @"
+'One',
+@{'Two' = 2},
+'Three',
+'Four'
+"@
+
+		Test-Format @"
+[pscustomobject]@{'value' = 1},
+[pscustomobject]@{'value' = 2},
+[pscustomobject]@{'value' = 3}
+"@
+
+		Test-Format @"
+'One',
+[ordered]@{
+	'Two' = 2
+	'Three' = 3
+},
+'Four'
+"@
+
+		Test-Format "@{'One' = 1}"
+
+		Test-Format @"
+[ordered]@{
+	'One' = 1
+	'Two' = 2
+	'Three' = 3
+	'Four' = 4
+}
+"@
+
+		Test-Format @"
+[ordered]@{
+	'One' = 1
+	'Two' = 2
+	'Three.1' = ,3.1
+	'Four' = 4
+}
+"@
+
+		Test-Format @"
+[ordered]@{
+	'One' = 1
+	'Two' = 2
+	'Three.12' =
+		3.1,
+		3.2
+	'Four' = 4
+}
+"@
+
+		Test-Format @"
+[ordered]@{
+	'One' = 1
+	'Two' = 2
+	'Three' = @{'One' = 3.1}
+	'Four' = 4
+}
+"@
+
+		Test-Format @"
+[ordered]@{
+	'One' = 1
+	'Two' = 2
+	'Three' = [ordered]@{
+		'One' = 3.1
+		'Two' = 3.2
 	}
+	'Four' = 4
+}
+"@
+
+		Test-Format @"
+[ordered]@{
+	'String' = 'String'
+	'HereString' = @'
+Hello
+World
+'@
+	'Int' = 67
+	'Double' = 1.2
+	'Long' = 1234567890123456
+	'DateTime' = [datetime]'1963-10-07T17:56:53.8139055+02:00'
+	'Version' = [version]'1.2.34567.890'
+	'Guid' = [guid]'5f167621-6abe-4153-a26c-f643e1716720'
+	'Script' = {2 * 3}
+	'Array' =
+		'One',
+		'Two',
+		'Three',
+		'Four'
+	'EmptyArray' = @()
+	'SingleValueArray' = ,'one'
+	'SubArray' =
+		'One',
+		(
+			'Two',
+			'Three'
+		),
+		'Four'
+	'HashTable' = @{'Name' = 'Value'}
+	'Ordered' = [ordered]@{
+		'One' = 1
+		'Two' = 2
+		'Three' = 3
+		'Four' = 4
+	}
+	'Object' = [pscustomobject]@{'Name' = 'Value'}
+}
+"@
+	}
+
+	Context 'strong formatting' {
+
+		Test-Format -Strong "[int]1"
+
+		Test-Format -Strong "[string]'One'"
+
+		Test-Format -Strong @"
+[array](
+	[string]'One',
+	[string]'Two',
+	[string]'Three',
+	[string]'Four'
+)
+"@
+
+		Test-Format -Strong @"
+[array](
+	[string]'One',
+	[array][string]'Two',
+	[string]'Three',
+	[string]'Four'
+)
+"@
+
+		Test-Format -Strong @"
+[array](
+	[string]'One',
+	[array](
+		[string]'Two',
+		[string]'Three'
+	),
+	[string]'Four'
+)
+"@
+
+		Test-Format -Strong @"
+[array](
+	[string]'One',
+	[hashtable]@{'Two' = [int]2},
+	[string]'Three',
+	[string]'Four'
+)
+"@
+
+		Test-Format -Strong @"
+[array](
+	[pscustomobject]@{'value' = [int]1},
+	[pscustomobject]@{'value' = [int]2},
+	[pscustomobject]@{'value' = [int]3}
+)
+"@
+
+		Test-Format -Strong @"
+[array](
+	[string]'One',
+	[ordered]@{
+		'Two' = [int]2
+		'Three' = [int]3
+	},
+	[string]'Four'
+)
+"@
+
+		Test-Format -Strong "[hashtable]@{'One' = [int]1}"
+
+		Test-Format -Strong @"
+[ordered]@{
+	'One' = [int]1
+	'Two' = [int]2
+	'Three' = [int]3
+	'Four' = [int]4
+}
+"@
+
+		Test-Format -Strong @"
+[ordered]@{
+	'One' = [int]1
+	'Two' = [int]2
+	'Three.1' = [array][double]3.1
+	'Four' = [int]4
+}
+"@
+
+		Test-Format -Strong @"
+[ordered]@{
+	'One' = [int]1
+	'Two' = [int]2
+	'Three.12' = [array](
+		[double]3.1,
+		[double]3.2
+	)
+	'Four' = [int]4
+}
+"@
+
+		Test-Format -Strong @"
+[ordered]@{
+	'One' = [int]1
+	'Two' = [int]2
+	'Three' = [hashtable]@{'One' = [double]3.1}
+	'Four' = [int]4
+}
+"@
+
+		Test-Format -Strong @"
+[ordered]@{
+	'One' = [int]1
+	'Two' = [int]2
+	'Three' = [ordered]@{
+		'One' = [double]3.1
+		'Two' = [double]3.2
+	}
+	'Four' = [int]4
+}
+"@
+
+		Test-Format -Strong @"
+[ordered]@{
+	'String' = [string]'String'
+	'HereString' = [string]@'
+Hello
+World
+'@
+	'Int' = [int]67
+	'Double' = [double]1.2
+	'Long' = [long]1234567890123456
+	'DateTime' = [datetime]'1963-10-07T17:56:53.8139055+02:00'
+	'Version' = [version]'1.2.34567.890'
+	'Guid' = [guid]'5f167621-6abe-4153-a26c-f643e1716720'
+	'Script' = [scriptblock]{2 * 3}
+	'Array' = [array](
+		[string]'One',
+		[string]'Two',
+		[string]'Three',
+		[string]'Four'
+	)
+	'EmptyArray' = [array]@()
+	'SingleValueArray' = [array][string]'one'
+	'SubArray' = [array](
+		[string]'One',
+		[array](
+			[string]'Two',
+			[string]'Three'
+		),
+		[string]'Four'
+	)
+	'HashTable' = [hashtable]@{'Name' = [string]'Value'}
+	'Ordered' = [ordered]@{
+		'One' = [int]1
+		'Two' = [int]2
+		'Three' = [int]3
+		'Four' = [int]4
+	}
+	'Object' = [pscustomobject]@{'Name' = [string]'Value'}
+}
+"@
+	}
+
+	Context 'formatting -expand 1' {
+
+		Test-Format -Expand 1 "1"
+
+		Test-Format -Expand 1 "'One'"
+
+		Test-Format -Expand 1 @"
+'One',
+'Two',
+'Three',
+'Four'
+"@
+
+		Test-Format -Expand 1 @"
+'One',
+(,'Two'),
+'Three',
+'Four'
+"@
+
+		Test-Format -Expand 1 @"
+'One',
+('Two', 'Three'),
+'Four'
+"@
+
+		Test-Format -Expand 1 @"
+'One',
+@{'Two' = 2},
+'Three',
+'Four'
+"@
+
+		Test-Format -Expand 1 @"
+[pscustomobject]@{'value' = 1},
+[pscustomobject]@{'value' = 2},
+[pscustomobject]@{'value' = 3}
+"@
+
+		Test-Format -Expand 1 @"
+'One',
+[ordered]@{'Two' = 2; 'Three' = 3},
+'Four'
+"@
+
+		Test-Format -Expand 1 "@{'One' = 1}"
+
+		Test-Format -Expand 1 @"
+[ordered]@{
+	'One' = 1
+	'Two' = 2
+	'Three' = 3
+	'Four' = 4
+}
+"@
+
+		Test-Format -Expand 1 @"
+[ordered]@{
+	'One' = 1
+	'Two' = 2
+	'Three.1' = ,3.1
+	'Four' = 4
+}
+"@
+
+		Test-Format -Expand 1 @"
+[ordered]@{
+	'One' = 1
+	'Two' = 2
+	'Three.12' = 3.1, 3.2
+	'Four' = 4
+}
+"@
+
+		Test-Format -Expand 1 @"
+[ordered]@{
+	'One' = 1
+	'Two' = 2
+	'Three' = @{'One' = 3.1}
+	'Four' = 4
+}
+"@
+
+		Test-Format -Expand 1 @"
+[ordered]@{
+	'One' = 1
+	'Two' = 2
+	'Three' = [ordered]@{'One' = 3.1; 'Two' = 3.2}
+	'Four' = 4
+}
+"@
+		Test-Format -Expand 1 @"
+[ordered]@{
+	'String' = 'String'
+	'HereString' = @'
+Hello
+World
+'@
+	'Int' = 67
+	'Double' = 1.2
+	'Long' = 1234567890123456
+	'DateTime' = [datetime]'1963-10-07T17:56:53.8139055+02:00'
+	'Version' = [version]'1.2.34567.890'
+	'Guid' = [guid]'5f167621-6abe-4153-a26c-f643e1716720'
+	'Script' = {2 * 3}
+	'Array' = 'One', 'Two', 'Three', 'Four'
+	'EmptyArray' = @()
+	'SingleValueArray' = ,'one'
+	'SubArray' = 'One', ('Two', 'Three'), 'Four'
+	'HashTable' = @{'Name' = 'Value'}
+	'Ordered' = [ordered]@{'One' = 1; 'Two' = 2; 'Three' = 3; 'Four' = 4}
+	'Object' = [pscustomobject]@{'Name' = 'Value'}
+}
+"@
+	}
+
+	Context 'strong formatting -expand 1' {
+
+		Test-Format -Strong -Expand 1 "[int]1"
+
+		Test-Format -Strong -Expand 1 "[string]'One'"
+
+		Test-Format -Strong -Expand 1 @"
+[array](
+	[string]'One',
+	[string]'Two',
+	[string]'Three',
+	[string]'Four'
+)
+"@
+
+		Test-Format -Strong -Expand 1 @"
+[array](
+	[string]'One',
+	[array][string]'Two',
+	[string]'Three',
+	[string]'Four'
+)
+"@
+
+		Test-Format -Strong -Expand 1 @"
+[array](
+	[string]'One',
+	[array]([string]'Two', [string]'Three'),
+	[string]'Four'
+)
+"@
+
+		Test-Format -Strong -Expand 1 @"
+[array](
+	[string]'One',
+	[hashtable]@{'Two' = [int]2},
+	[string]'Three',
+	[string]'Four'
+)
+"@
+
+		Test-Format -Strong -Expand 1 @"
+[array](
+	[pscustomobject]@{'value' = [int]1},
+	[pscustomobject]@{'value' = [int]2},
+	[pscustomobject]@{'value' = [int]3}
+)
+"@
+
+		Test-Format -Strong -Expand 1 @"
+[array](
+	[string]'One',
+	[ordered]@{'Two' = [int]2; 'Three' = [int]3},
+	[string]'Four'
+)
+"@
+
+		Test-Format -Strong -Expand 1 "[hashtable]@{'One' = [int]1}"
+
+		Test-Format -Strong -Expand 1 @"
+[ordered]@{
+	'One' = [int]1
+	'Two' = [int]2
+	'Three' = [int]3
+	'Four' = [int]4
+}
+"@
+
+		Test-Format -Strong -Expand 1 @"
+[ordered]@{
+	'One' = [int]1
+	'Two' = [int]2
+	'Three.1' = [array][double]3.1
+	'Four' = [int]4
+}
+"@
+
+		Test-Format -Strong -Expand 1 @"
+[ordered]@{
+	'One' = [int]1
+	'Two' = [int]2
+	'Three.12' = [array]([double]3.1, [double]3.2)
+	'Four' = [int]4
+}
+"@
+
+		Test-Format -Strong -Expand 1 @"
+[ordered]@{
+	'One' = [int]1
+	'Two' = [int]2
+	'Three' = [hashtable]@{'One' = [double]3.1}
+	'Four' = [int]4
+}
+"@
+
+		Test-Format -Strong -Expand 1 @"
+[ordered]@{
+	'One' = [int]1
+	'Two' = [int]2
+	'Three' = [ordered]@{'One' = [double]3.1; 'Two' = [double]3.2}
+	'Four' = [int]4
+}
+"@
+
+		Test-Format -Strong -Expand 1 @"
+[ordered]@{
+	'String' = [string]'String'
+	'HereString' = [string]@'
+Hello
+World
+'@
+	'Int' = [int]67
+	'Double' = [double]1.2
+	'Long' = [long]1234567890123456
+	'DateTime' = [datetime]'1963-10-07T17:56:53.8139055+02:00'
+	'Version' = [version]'1.2.34567.890'
+	'Guid' = [guid]'5f167621-6abe-4153-a26c-f643e1716720'
+	'Script' = [scriptblock]{2 * 3}
+	'Array' = [array]([string]'One', [string]'Two', [string]'Three', [string]'Four')
+	'EmptyArray' = [array]@()
+	'SingleValueArray' = [array][string]'one'
+	'SubArray' = [array]([string]'One', [array]([string]'Two', [string]'Three'), [string]'Four')
+	'HashTable' = [hashtable]@{'Name' = [string]'Value'}
+	'Ordered' = [ordered]@{'One' = [int]1; 'Two' = [int]2; 'Three' = [int]3; 'Four' = [int]4}
+	'Object' = [pscustomobject]@{'Name' = [string]'Value'}
+}
+"@
+	}
+
+	Context 'formatting -expand 0' {
 	
+		Test-Format -Expand 0 "1"
+
+		Test-Format -Expand 0 "'One'"
+
+		Test-Format -Expand 0 "'One', 'Two', 'Three', 'Four'"
+
+		Test-Format -Expand 0 "'One', (,'Two'), 'Three', 'Four'"
+
+		Test-Format -Expand 0 "'One', ('Two', 'Three'), 'Four'"
+
+		Test-Format -Expand 0 "'One', @{'Two' = 2}, 'Three', 'Four'"
+
+		Test-Format -Expand 0 "[pscustomobject]@{'value' = 1}, [pscustomobject]@{'value' = 2}, [pscustomobject]@{'value' = 3}"
+
+		Test-Format -Expand 0 "'One', [ordered]@{'Two' = 2; 'Three' = 3}, 'Four'"
+
+		Test-Format -Expand 0 "@{'One' = 1}"
+
+		Test-Format -Expand 0 "[ordered]@{'One' = 1; 'Two' = 2; 'Three' = 3; 'Four' = 4}"
+
+		Test-Format -Expand 0 "[ordered]@{'One' = 1; 'Two' = 2; 'Three.1' = ,3.1; 'Four' = 4}"
+
+		Test-Format -Expand 0 "[ordered]@{'One' = 1; 'Two' = 2; 'Three.12' = 3.1, 3.2; 'Four' = 4}"
+
+		Test-Format -Expand 0 "[ordered]@{'One' = 1; 'Two' = 2; 'Three' = @{'One' = 3.1}; 'Four' = 4}"
+
+		Test-Format -Expand 0 "[ordered]@{'One' = 1; 'Two' = 2; 'Three' = [ordered]@{'One' = 3.1; 'Two' = 3.2}; 'Four' = 4}"
+
+		Test-Format -Expand 0 @"
+[ordered]@{'String' = 'String'; 'HereString' = @'
+Hello
+World
+'@
+; 'Int' = 67; 'Double' = 1.2; 'Long' = 1234567890123456; 'DateTime' = [datetime]'1963-10-07T17:56:53.8139055+02:00'; 'Version' = [version]'1.2.34567.890'; 'Guid' = [guid]'5f167621-6abe-4153-a26c-f643e1716720'; 'Script' = {2 * 3}; 'Array' = 'One', 'Two', 'Three', 'Four'; 'EmptyArray' = @(); 'SingleValueArray' = ,'one'; 'SubArray' = 'One', ('Two', 'Three'), 'Four'; 'HashTable' = @{'Name' = 'Value'}; 'Ordered' = [ordered]@{'One' = 1; 'Two' = 2; 'Three' = 3; 'Four' = 4}; 'Object' = [pscustomobject]@{'Name' = 'Value'}}
+"@
+
+	}
+
+	Context 'strong formatting -expand 0' {
+	
+		Test-Format -Strong -Expand 0 "[int]1"
+
+		Test-Format -Strong -Expand 0 "[string]'One'"
+
+		Test-Format -Strong -Expand 0 "[array]([string]'One', [string]'Two', [string]'Three', [string]'Four')"
+
+		Test-Format -Strong -Expand 0 "[array]([string]'One', [array][string]'Two', [string]'Three', [string]'Four')"
+
+		Test-Format -Strong -Expand 0 "[array]([string]'One', [array]([string]'Two', [string]'Three'), [string]'Four')"
+
+		Test-Format -Strong -Expand 0 "[array]([string]'One', [hashtable]@{'Two' = [int]2}, [string]'Three', [string]'Four')"
+
+		Test-Format -Strong -Expand 0 "[array]([pscustomobject]@{'value' = [int]1}, [pscustomobject]@{'value' = [int]2}, [pscustomobject]@{'value' = [int]3})"
+
+		Test-Format -Strong -Expand 0 "[array]([string]'One', [ordered]@{'Two' = [int]2; 'Three' = [int]3}, [string]'Four')"
+
+		Test-Format -Strong -Expand 0 "[hashtable]@{'One' = [int]1}"
+
+		Test-Format -Strong -Expand 0 "[ordered]@{'One' = [int]1; 'Two' = [int]2; 'Three' = [int]3; 'Four' = [int]4}"
+
+		Test-Format -Strong -Expand 0 "[ordered]@{'One' = [int]1; 'Two' = [int]2; 'Three.1' = [array][double]3.1; 'Four' = [int]4}"
+
+		Test-Format -Strong -Expand 0 "[ordered]@{'One' = [int]1; 'Two' = [int]2; 'Three.12' = [array]([double]3.1, [double]3.2); 'Four' = [int]4}"
+
+		Test-Format -Strong -Expand 0 "[ordered]@{'One' = [int]1; 'Two' = [int]2; 'Three' = [hashtable]@{'One' = [double]3.1}; 'Four' = [int]4}"
+
+		Test-Format -Strong -Expand 0 "[ordered]@{'One' = [int]1; 'Two' = [int]2; 'Three' = [ordered]@{'One' = [double]3.1; 'Two' = [double]3.2}; 'Four' = [int]4}"
+
+		Test-Format -Strong -Expand 0 @"
+[ordered]@{'String' = [string]'String'; 'HereString' = [string]@'
+Hello
+World
+'@
+; 'Int' = [int]67; 'Double' = [double]1.2; 'Long' = [long]1234567890123456; 'DateTime' = [datetime]'1963-10-07T17:56:53.8139055+02:00'; 'Version' = [version]'1.2.34567.890'; 'Guid' = [guid]'5f167621-6abe-4153-a26c-f643e1716720'; 'Script' = [scriptblock]{2 * 3}; 'Array' = [array]([string]'One', [string]'Two', [string]'Three', [string]'Four'); 'EmptyArray' = [array]@(); 'SingleValueArray' = [array][string]'one'; 'SubArray' = [array]([string]'One', [array]([string]'Two', [string]'Three'), [string]'Four'); 'HashTable' = [hashtable]@{'Name' = [string]'Value'}; 'Ordered' = [ordered]@{'One' = [int]1; 'Two' = [int]2; 'Three' = [int]3; 'Four' = [int]4}; 'Object' = [pscustomobject]@{'Name' = [string]'Value'}}
+"@
+	}
+
+	Context 'formatting -expand -1 (compressed)' {
+	
+		Test-Format -Expand -1 "1"
+
+		Test-Format -Expand -1 "'One'"
+
+		Test-Format -Expand -1 "'One','Two','Three','Four'"
+
+		Test-Format -Expand -1 "'One',(,'Two'),'Three','Four'"
+
+		Test-Format -Expand -1 "'One',('Two','Three'),'Four'"
+
+		Test-Format -Expand -1 "'One',@{'Two'=2},'Three','Four'"
+
+		Test-Format -Expand -1 "[pscustomobject]@{'value'=1},[pscustomobject]@{'value'=2},[pscustomobject]@{'value'=3}"
+
+		Test-Format -Expand -1 "'One',[ordered]@{'Two'=2;'Three'=3},'Four'"
+
+		Test-Format -Expand -1 "@{'One'=1}"
+
+		Test-Format -Expand -1 "[ordered]@{'One'=1;'Two'=2;'Three'=3;'Four'=4}"
+
+		Test-Format -Expand -1 "[ordered]@{'One'=1;'Two'=2;'Three.1'=,3.1;'Four'=4}"
+
+		Test-Format -Expand -1 "[ordered]@{'One'=1;'Two'=2;'Three.12'=3.1,3.2;'Four'=4}"
+
+		Test-Format -Expand -1 "[ordered]@{'One'=1;'Two'=2;'Three'=@{'One'=3.1};'Four'=4}"
+
+		Test-Format -Expand -1 "[ordered]@{'One'=1;'Two'=2;'Three'=[ordered]@{'One'=3.1;'Two'=3.2};'Four'=4}"
+
+		Test-Format -Expand -1 @"
+[ordered]@{'String'='String';'HereString'=@'
+Hello
+World
+'@
+;'Int'=67;'Double'=1.2;'Long'=1234567890123456;'DateTime'=[datetime]'1963-10-07T17:56:53.8139055+02:00';'Version'=[version]'1.2.34567.890';'Guid'=[guid]'5f167621-6abe-4153-a26c-f643e1716720';'Script'={2 * 3};'Array'='One','Two','Three','Four';'EmptyArray'=@();'SingleValueArray'=,'one';'SubArray'='One',('Two','Three'),'Four';'HashTable'=@{'Name'='Value'};'Ordered'=[ordered]@{'One'=1;'Two'=2;'Three'=3;'Four'=4};'Object'=[pscustomobject]@{'Name'='Value'}}
+"@
+	}
+
+	Context 'strong formatting -expand -1 (compressed)' {
+	
+		Test-Format -Strong -Expand -1 "[int]1"
+
+		Test-Format -Strong -Expand -1 "[string]'One'"
+
+		Test-Format -Strong -Expand -1 "[array]([string]'One',[string]'Two',[string]'Three',[string]'Four')"
+
+		Test-Format -Strong -Expand -1 "[array]([string]'One',[array][string]'Two',[string]'Three',[string]'Four')"
+
+		Test-Format -Strong -Expand -1 "[array]([string]'One',[array]([string]'Two',[string]'Three'),[string]'Four')"
+
+		Test-Format -Strong -Expand -1 "[array]([string]'One',[hashtable]@{'Two'=[int]2},[string]'Three',[string]'Four')"
+
+		Test-Format -Strong -Expand -1 "[array]([pscustomobject]@{'value'=[int]1},[pscustomobject]@{'value'=[int]2},[pscustomobject]@{'value'=[int]3})"
+
+		Test-Format -Strong -Expand -1 "[array]([string]'One',[ordered]@{'Two'=[int]2;'Three'=[int]3},[string]'Four')"
+
+		Test-Format -Strong -Expand -1 "[hashtable]@{'One'=[int]1}"
+
+		Test-Format -Strong -Expand -1 "[ordered]@{'One'=[int]1;'Two'=[int]2;'Three'=[int]3;'Four'=[int]4}"
+
+		Test-Format -Strong -Expand -1 "[ordered]@{'One'=[int]1;'Two'=[int]2;'Three.1'=[array][double]3.1;'Four'=[int]4}"
+
+		Test-Format -Strong -Expand -1 "[ordered]@{'One'=[int]1;'Two'=[int]2;'Three.12'=[array]([double]3.1,[double]3.2);'Four'=[int]4}"
+
+		Test-Format -Strong -Expand -1 "[ordered]@{'One'=[int]1;'Two'=[int]2;'Three'=[hashtable]@{'One'=[double]3.1};'Four'=[int]4}"
+
+		Test-Format -Strong -Expand -1 "[ordered]@{'One'=[int]1;'Two'=[int]2;'Three'=[ordered]@{'One'=[double]3.1;'Two'=[double]3.2};'Four'=[int]4}"
+
+		Test-Format -Strong -Expand -1 @"
+[ordered]@{'String'=[string]'String';'HereString'=[string]@'
+Hello
+World
+'@
+;'Int'=[int]67;'Double'=[double]1.2;'Long'=[long]1234567890123456;'DateTime'=[datetime]'1963-10-07T17:56:53.8139055+02:00';'Version'=[version]'1.2.34567.890';'Guid'=[guid]'5f167621-6abe-4153-a26c-f643e1716720';'Script'=[scriptblock]{2 * 3};'Array'=[array]([string]'One',[string]'Two',[string]'Three',[string]'Four');'EmptyArray'=[array]@();'SingleValueArray'=[array][string]'one';'SubArray'=[array]([string]'One',[array]([string]'Two',[string]'Three'),[string]'Four');'HashTable'=[hashtable]@{'Name'=[string]'Value'};'Ordered'=[ordered]@{'One'=[int]1;'Two'=[int]2;'Three'=[int]3;'Four'=[int]4};'Object'=[pscustomobject]@{'Name'=[string]'Value'}}
+"@
+	}
+
 	Context 'recursive references' {
 	
 		It "recursive hash table" {
@@ -399,7 +1086,7 @@ Describe 'ConvertTo-Expression' {
 			
 			$Actual = &$Expression
 			
-			$Actual.Child.Parent.Name | Should -Be $Object.Child.Parent.Name
+			$Actual.Child.Parent.Name | Should -Be $Parent.Child.Parent.Name
 		}
 	}
 }
