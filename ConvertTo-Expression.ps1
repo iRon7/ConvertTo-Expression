@@ -1,5 +1,5 @@
 <#PSScriptInfo
-.VERSION 3.2.9
+.VERSION 3.2.10
 .GUID 5f167621-6abe-4153-a26c-f643e1716720
 .AUTHOR Ronald Bode (iRon)
 .DESCRIPTION Stringifys an object to a PowerShell expression (PSON, PowerShell Object Notation).
@@ -50,9 +50,9 @@ Function ConvertTo-Expression {
 		use the unary comma operator, like: ,Object | ConvertTo-Expression
 
 	.OUTPUTS
-		System.Management.Automation.ScriptBlock. ConvertTo-Expression returns
-		a PowerShell expression (ScriptBlock) which default display output is
-		a Sytem.String.
+		System.Management.Automation.ScriptBlock[]. ConvertTo-Expression
+		returns a PowerShell expression (ScriptBlock) for each input object.
+		A PowerShell expression default display output is a Sytem.String.
 
 	.PARAMETER InputObject
 		Specifies the objects to convert to a PowerShell expression. Enter a
@@ -101,7 +101,7 @@ Function ConvertTo-Expression {
 
 		PS C:\> (Get-UICulture).Calendar | ConvertTo-Expression
 
-		[PSCustomObject]@{
+		[pscustomobject]@{
 			'AlgorithmType' = 1
 			'CalendarType' = 1
 			'Eras' = ,1
@@ -113,14 +113,14 @@ Function ConvertTo-Expression {
 
 		PS C:\> (Get-UICulture).Calendar | ConvertTo-Expression -Strong
 
-		[HashTable]@{
+		[pscustomobject]@{
 			'AlgorithmType' = [System.Globalization.CalendarAlgorithmType]'SolarCalendar'
 			'CalendarType' = [System.Globalization.GregorianCalendarTypes]'Localized'
-			'Eras' = ,[int32]1
+			'Eras' = [array][int]1
 			'IsReadOnly' = [bool]$False
 			'MaxSupportedDateTime' = [datetime]'9999-12-31T23:59:59.9999999'
 			'MinSupportedDateTime' = [datetime]'0001-01-01T00:00:00.0000000'
-			'TwoDigitYearMax' = [int32]2029
+			'TwoDigitYearMax' = [int]2029
 		}
 
 	.EXAMPLE
@@ -162,7 +162,7 @@ Function ConvertTo-Expression {
 		PS C:\>Get-Host | ConvertTo-Expression -Depth 4	# Reveal complex object hierarchies
 
 	.LINK
-		Invoke-Expression (Alias ConvertFrom-Pson)
+		https://www.powershellgallery.com/packages/ConvertFrom-Expression
 #>
 	[CmdletBinding()][OutputType([ScriptBlock])]Param (
 		[Parameter(ValueFromPipeLine = $True)][Alias('InputObject')]$Object, [Int]$Depth = 9, [Int]$Expand = $Depth,
@@ -171,31 +171,29 @@ Function ConvertTo-Expression {
 	)
 	Begin {
 		If (!$PSCmdlet.MyInvocation.ExpectingInput) {If ($Concatenate) {Write-Warning 'The concatenate switch only applies to pipeline input'} Else {$Concatenate = $True}}
-		$NumberTypes = @{}; 'byte', 'int', 'int16', 'int32', 'int64', 'sbyte', 'uint', 'uint16', 'uint32', 'uint64', 'float', 'single', 'double', 'long', 'decimal', 'IntPtr' | ForEach-Object {$NumberTypes[$_] = $Null}
+		$NumericTypes = @{}
+		ForEach ($NumericTpye in 'byte', 'int', 'int16', 'int32', 'int64', 'sbyte', 'uint', 'uint16', 'uint32', 'uint64', 'float', 'single', 'double', 'long', 'decimal', 'IntPtr') {$NumericTypes[$NumericTpye] = $Null}
 		$Tab = $IndentChar * $Indentation
 		Function Serialize($Object, $Iteration, $Indent) {
 			Function Quote ([String]$Item) {If ($Item -Match '[\r\n]') {"@'$NewLine$Item$NewLine'@$NewLine"} Else {"'$($Item.Replace('''', ''''''))'"}}
-			Function Stringify ($Item, $Cast = $Type) {
+			Function Stringify ($Object, $Cast = $Type) {
 				$Explicit = $PSBoundParameters.ContainsKey('Cast')
 				Function Prefix {If ($Explore) {If ($Strong) {"[$Type]"}} ElseIf ($Strong -or $Explicit) {If ($Cast) {"[$Cast]"}}}
-				Function Iterate($Item, [Switch]$ListItem, [Switch]$Level) {
-					If ($Iteration -lt $Depth) {Serialize $Item -Iteration ($Iteration + 1) -Indent ($Indent + 1 - [Int][Bool]$Level)} Else {"'...'"}
+				Function Iterate($Object, [Switch]$ListItem, [Switch]$Level) {
+					If ($Iteration -lt $Depth) {Serialize $Object -Iteration ($Iteration + 1) -Indent ($Indent + 1 - [Int][Bool]$Level)} Else {"'...'"}
 				}
-				If ($Item -is [String]) {(Prefix) + $Item} Else {
-					$List, $Members = $Null; $Methods = $Item.PSObject.Methods.Name
+				If ($Object -is [String]) {(Prefix) + $Object} Else {
+					$List, $Properties = $Null; $Methods = $Object.PSObject.Methods.Name
 					If ($Methods -Contains 'GetEnumerator') {
 						If ($Methods -Contains 'get_Keys' -and $Methods -Contains 'get_Values') {
-							$List = [Ordered]@{}; $Item.get_Keys() | ForEach-Object {$List[$_] = Iterate $Item[$_]}
+							$List = [Ordered]@{}; ForEach ($Key in $Object.get_Keys()) {$List[$Key] = Iterate $Object[$Key]}
 						} Else {
-							$List = @($Item | ForEach-Object {Iterate $_ -ListItem -Level:($Count -eq 1 -or ($Null -eq $Indent -and !$Explore -and !$Strong))})
+							$List = @(ForEach ($Item in $Object) {Iterate $Item -ListItem -Level:($Count -eq 1 -or ($Null -eq $Indent -and !$Explore -and !$Strong))})
 						}
 					} Else {
-						$Members = $Item | Get-Member -Type Property; If (!$Members) {$Members = $Item | Get-Member -Type NoteProperty}
-						If ($Members) {
-							$List = [Ordered]@{}; ForEach ($Member in $Members) {
-								$Item.PSObject.Properties | Where-Object {$_.Name -eq $Member.Name -and $_.IsGettable} | ForEach-Object {$List[$_.Name] = Iterate $_.Value}
-							}
-						}
+						$Properties = $Object.PSObject.Properties | Where-Object {$_.MemberType -eq 'Property'}
+						If (!$Properties) {$Properties = $Object.PSObject.Properties | Where-Object {$_.MemberType-eq 'NoteProperty'}}
+						If ($Properties) {$List = [Ordered]@{}; ForEach ($Property in $Properties) {$List[$Property.Name] = Iterate $Property.Value}}
 					}
 					If ($List -is [Array]) {
 						If (!$Explicit) {$Cast = 'array'}
@@ -216,15 +214,15 @@ Function ConvertTo-Expression {
 							If ($ListItem -or $Strong) {(Prefix) + "($Content$LineFeed)"} Else {$Content}
 						}
 					} ElseIf ($List -is [System.Collections.Specialized.OrderedDictionary]) {
-						If (!$Explicit) {If ($Members) {$Explicit = $True; $Cast = 'pscustomobject'} Else {$Cast = 'hashtable'}}
+						If (!$Explicit) {If ($Properties) {$Explicit = $True; $Cast = 'pscustomobject'} Else {$Cast = 'hashtable'}}
 						If (!$List.Count) {(Prefix) + '@{}'}
-						ElseIf ($Expand -lt 0) {(Prefix) + '@{' + (($List.get_Keys() | ForEach-Object {"'$_'=$($List.$_)"}) -Join ';') + '}'}
+						ElseIf ($Expand -lt 0) {(Prefix) + '@{' + (@(ForEach ($Key in $List.get_Keys()) {"'$Key'=$($List.$Key)"}) -Join ';') + '}'}
 						ElseIf ($List.Count -eq 1 -or $Indent -ge $Expand - 1) {
-							(Prefix) + '@{' + (($List.get_Keys() | ForEach-Object {"'$_' = $($List.$_)"}) -Join '; ') + '}'
+							(Prefix) + '@{' + (@(ForEach ($Key in $List.get_Keys()) {"'$Key' = $($List.$Key)"}) -Join '; ') + '}'
 						} Else {
 							$LineFeed = $NewLine + ($Tab * $Indent)
-							(Prefix) + "@{$LineFeed$Tab" + (($List.get_Keys() | ForEach-Object {
-								If (($List.$_)[0] -NotMatch '[\S]') {"'$_' =$($List.$_)".TrimEnd()} Else {"'$_' = $($List.$_)".TrimEnd()}
+							(Prefix) + "@{$LineFeed$Tab" + (@(ForEach ($Key in $List.get_Keys()) {
+								If (($List.$Key)[0] -NotMatch '[\S]') {"'$Key' =$($List.$Key)".TrimEnd()} Else {"'$Key' = $($List.$Key)".TrimEnd()}
 							}) -Join "$LineFeed$Tab") + "$LineFeed}"
 						}
 					}
@@ -234,7 +232,7 @@ Function ConvertTo-Expression {
 			If ($Null -eq $Object) {"`$Null"} Else {
 				$Type = $Object.GetType()
 				If ($Object -is [Boolean]) {If ($Object) {Stringify '$True'} Else {Stringify '$False'}}
-				ElseIf ($NumberTypes.ContainsKey($Type.Name)) {Stringify "$Object"}
+				ElseIf ($NumericTypes.ContainsKey($Type.Name)) {Stringify "$Object"}
 				ElseIf ($Object -is [String]) {Stringify (Quote $Object)}
 				ElseIf ($Object -is [DateTime]) {Stringify "'$($Object.ToString('o'))'" $Type}
 				ElseIf ($Object -is [Version]) {Stringify "'$Object'" $Type}
