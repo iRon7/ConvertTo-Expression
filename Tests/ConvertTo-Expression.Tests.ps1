@@ -391,6 +391,15 @@ Describe 'ConvertTo-Expression' {
 "@
 
 		Test-Format @"
+[pscustomobject]@{
+	'One' = 1
+	'Two' = 2
+	'Three' = 3
+	'Four' = 4
+}
+"@
+
+		Test-Format @"
 'One',
 [ordered]@{
 	'Two' = 2
@@ -544,6 +553,15 @@ World
 "@
 
 		Test-Format -Strong @"
+[pscustomobject]@{
+	'One' = [int]1
+	'Two' = [int]2
+	'Three' = [int]3
+	'Four' = [int]4
+}
+"@
+
+		Test-Format -Strong @"
 [array](
 	[string]'One',
 	[ordered]@{
@@ -689,6 +707,15 @@ World
 "@
 
 		Test-Format -Expand 1 @"
+[pscustomobject]@{
+	'One' = 1
+	'Two' = 2
+	'Three' = 3
+	'Four' = 4
+}
+"@
+
+		Test-Format -Expand 1 @"
 'One',
 [ordered]@{'Two' = 2; 'Three' = 3},
 'Four'
@@ -815,6 +842,15 @@ World
 "@
 
 		Test-Format -Strong -Expand 1 @"
+[pscustomobject]@{
+	'One' = [int]1
+	'Two' = [int]2
+	'Three' = [int]3
+	'Four' = [int]4
+}
+"@
+
+		Test-Format -Strong -Expand 1 @"
 [array](
 	[string]'One',
 	[ordered]@{'Two' = [int]2; 'Three' = [int]3},
@@ -910,6 +946,8 @@ World
 
 		Test-Format -Expand 0 "[pscustomobject]@{'value' = 1}, [pscustomobject]@{'value' = 2}, [pscustomobject]@{'value' = 3}"
 
+		Test-Format -Expand 0 "[pscustomobject]@{'One' = 1; 'Two' = 2; 'Three' = 3; 'Four' = 4}"
+
 		Test-Format -Expand 0 "'One', [ordered]@{'Two' = 2; 'Three' = 3}, 'Four'"
 
 		Test-Format -Expand 0 "@{'One' = 1}"
@@ -950,6 +988,8 @@ World
 
 		Test-Format -Strong -Expand 0 "[array]([pscustomobject]@{'value' = [int]1}, [pscustomobject]@{'value' = [int]2}, [pscustomobject]@{'value' = [int]3})"
 
+		Test-Format -Strong -Expand 0 "[pscustomobject]@{'One' = [int]1; 'Two' = [int]2; 'Three' = [int]3; 'Four' = [int]4}"
+
 		Test-Format -Strong -Expand 0 "[array]([string]'One', [ordered]@{'Two' = [int]2; 'Three' = [int]3}, [string]'Four')"
 
 		Test-Format -Strong -Expand 0 "[hashtable]@{'One' = [int]1}"
@@ -989,6 +1029,8 @@ World
 
 		Test-Format -Expand -1 "[pscustomobject]@{'value'=1},[pscustomobject]@{'value'=2},[pscustomobject]@{'value'=3}"
 
+		Test-Format -Expand -1 "[pscustomobject]@{'One'=1;'Two'=2;'Three'=3;'Four'=4}"
+
 		Test-Format -Expand -1 "'One',[ordered]@{'Two'=2;'Three'=3},'Four'"
 
 		Test-Format -Expand -1 "@{'One'=1}"
@@ -1027,6 +1069,8 @@ World
 		Test-Format -Strong -Expand -1 "[array]([string]'One',[hashtable]@{'Two'=[int]2},[string]'Three',[string]'Four')"
 
 		Test-Format -Strong -Expand -1 "[array]([pscustomobject]@{'value'=[int]1},[pscustomobject]@{'value'=[int]2},[pscustomobject]@{'value'=[int]3})"
+
+		Test-Format -Strong -Expand -1 "[pscustomobject]@{'One'=[int]1;'Two'=[int]2;'Three'=[int]3;'Four'=[int]4}"
 
 		Test-Format -Strong -Expand -1 "[array]([string]'One',[ordered]@{'Two'=[int]2;'Three'=[int]3},[string]'Four')"
 
@@ -1090,3 +1134,4 @@ World
 		}
 	}
 }
+
