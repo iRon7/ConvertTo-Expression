@@ -1,5 +1,5 @@
 <#PSScriptInfo
-.VERSION 3.2.10
+.VERSION 3.2.12
 .GUID 5f167621-6abe-4153-a26c-f643e1716720
 .AUTHOR Ronald Bode (iRon)
 .DESCRIPTION Stringifys an object to a PowerShell expression (PSON, PowerShell Object Notation).
@@ -47,7 +47,7 @@ Function ConvertTo-Expression {
 	.INPUTS
 		Any. Each objects provided through the pipeline will converted to an
 		expression. To concatinate all piped objects in a single expression,
-		use the unary comma operator, like: ,Object | ConvertTo-Expression
+		use the unary comma operator, e.g.: ,$Object | ConvertTo-Expression
 
 	.OUTPUTS
 		System.Management.Automation.ScriptBlock[]. ConvertTo-Expression
@@ -171,11 +171,10 @@ Function ConvertTo-Expression {
 	)
 	Begin {
 		If (!$PSCmdlet.MyInvocation.ExpectingInput) {If ($Concatenate) {Write-Warning 'The concatenate switch only applies to pipeline input'} Else {$Concatenate = $True}}
-		$NumericTypes = @{}
-		ForEach ($NumericTpye in 'byte', 'int', 'int16', 'int32', 'int64', 'sbyte', 'uint', 'uint16', 'uint32', 'uint64', 'float', 'single', 'double', 'long', 'decimal', 'IntPtr') {$NumericTypes[$NumericTpye] = $Null}
 		$Tab = $IndentChar * $Indentation
 		Function Serialize($Object, $Iteration, $Indent) {
-			Function Quote ([String]$Item) {If ($Item -Match '[\r\n]') {"@'$NewLine$Item$NewLine'@$NewLine"} Else {"'$($Item.Replace('''', ''''''))'"}}
+			Function Quote ([String]$Item) {"'$($Item.Replace('''', ''''''))'"}
+			Function Here ([String]$Item) {If ($Item -Match '[\r\n]') {"@'$NewLine$Item$NewLine'@$NewLine"} Else {Quote $Item}}
 			Function Stringify ($Object, $Cast = $Type) {
 				$Explicit = $PSBoundParameters.ContainsKey('Cast')
 				Function Prefix {If ($Explore) {If ($Strong) {"[$Type]"}} ElseIf ($Strong -or $Explicit) {If ($Cast) {"[$Cast]"}}}
@@ -186,14 +185,14 @@ Function ConvertTo-Expression {
 					$List, $Properties = $Null; $Methods = $Object.PSObject.Methods.Name
 					If ($Methods -Contains 'GetEnumerator') {
 						If ($Methods -Contains 'get_Keys' -and $Methods -Contains 'get_Values') {
-							$List = [Ordered]@{}; ForEach ($Key in $Object.get_Keys()) {$List[$Key] = Iterate $Object[$Key]}
+							$List = [Ordered]@{}; ForEach ($Key in $Object.get_Keys()) {$List[(Quote $Key)] = Iterate $Object[$Key]}
 						} Else {
 							$List = @(ForEach ($Item in $Object) {Iterate $Item -ListItem -Level:($Count -eq 1 -or ($Null -eq $Indent -and !$Explore -and !$Strong))})
 						}
 					} Else {
 						$Properties = $Object.PSObject.Properties | Where-Object {$_.MemberType -eq 'Property'}
 						If (!$Properties) {$Properties = $Object.PSObject.Properties | Where-Object {$_.MemberType-eq 'NoteProperty'}}
-						If ($Properties) {$List = [Ordered]@{}; ForEach ($Property in $Properties) {$List[$Property.Name] = Iterate $Property.Value}}
+						If ($Properties) {$List = [Ordered]@{}; ForEach ($Property in $Properties) {$List[(Quote $Property.Name)] = Iterate $Property.Value}}
 					}
 					If ($List -is [Array]) {
 						If (!$Explicit) {$Cast = 'array'}
@@ -216,13 +215,13 @@ Function ConvertTo-Expression {
 					} ElseIf ($List -is [System.Collections.Specialized.OrderedDictionary]) {
 						If (!$Explicit) {If ($Properties) {$Explicit = $True; $Cast = 'pscustomobject'} Else {$Cast = 'hashtable'}}
 						If (!$List.Count) {(Prefix) + '@{}'}
-						ElseIf ($Expand -lt 0) {(Prefix) + '@{' + (@(ForEach ($Key in $List.get_Keys()) {"'$Key'=$($List.$Key)"}) -Join ';') + '}'}
+						ElseIf ($Expand -lt 0) {(Prefix) + '@{' + (@(ForEach ($Key in $List.get_Keys()) {"$Key=$($List.$Key)"}) -Join ';') + '}'}
 						ElseIf ($List.Count -eq 1 -or $Indent -ge $Expand - 1) {
-							(Prefix) + '@{' + (@(ForEach ($Key in $List.get_Keys()) {"'$Key' = $($List.$Key)"}) -Join '; ') + '}'
+							(Prefix) + '@{' + (@(ForEach ($Key in $List.get_Keys()) {"$Key = $($List.$Key)"}) -Join '; ') + '}'
 						} Else {
 							$LineFeed = $NewLine + ($Tab * $Indent)
 							(Prefix) + "@{$LineFeed$Tab" + (@(ForEach ($Key in $List.get_Keys()) {
-								If (($List.$Key)[0] -NotMatch '[\S]') {"'$Key' =$($List.$Key)".TrimEnd()} Else {"'$Key' = $($List.$Key)".TrimEnd()}
+								If (($List.$Key)[0] -NotMatch '[\S]') {"$Key =$($List.$Key)".TrimEnd()} Else {"$Key = $($List.$Key)".TrimEnd()}
 							}) -Join "$LineFeed$Tab") + "$LineFeed}"
 						}
 					}
@@ -232,17 +231,19 @@ Function ConvertTo-Expression {
 			If ($Null -eq $Object) {"`$Null"} Else {
 				$Type = $Object.GetType()
 				If ($Object -is [Boolean]) {If ($Object) {Stringify '$True'} Else {Stringify '$False'}}
-				ElseIf ($NumericTypes.ContainsKey($Type.Name)) {Stringify "$Object"}
-				ElseIf ($Object -is [String]) {Stringify (Quote $Object)}
+				ElseIf ($Object -is [Char]) {Stringify "'$($Object)'" $Type}
+				ElseIf ($Type.IsPrimitive) {Stringify "$Object"}
+				ElseIf ($Object -is [String]) {Stringify (Here $Object)}
 				ElseIf ($Object -is [DateTime]) {Stringify "'$($Object.ToString('o'))'" $Type}
-				ElseIf ($Object -is [Version]) {Stringify "'$Object'" $Type}
+				ElseIf ($Object -is [Version] -or $Type.Name -eq 'SemVer') {Stringify "'$Object'" $Type}
+				ElseIf ($Type.Name -eq 'SemanticVersion') {Stringify "'$Object'" 'semver'}
 				ElseIf ($Object -is [Enum]) {If ($Strong) {Stringify "'$Object'" $Type} Else {Stringify "$(0 + $Object)"}}
 				ElseIf ($Object -is [ScriptBlock]) {If ($Object -Match "\#.*?$") {Stringify "{$Object$NewLine}"} Else {Stringify "{$Object}"}}
 				ElseIf ($Object -is [RuntimeTypeHandle]) {Stringify "$($Object.Value)"}
 				ElseIf ($Object -is [Xml]) {
 					$SW = New-Object System.IO.StringWriter; $XW = New-Object System.Xml.XmlTextWriter $SW
 					$XW.Formatting = If ($Indent -lt $Expand - 1) {'Indented'} Else {'None'}
-					$XW.Indentation = $Indentation; $XW.IndentChar = $IndentChar; $Object.WriteContentTo($XW); Stringify (Quote $SW) $Type}
+					$XW.Indentation = $Indentation; $XW.IndentChar = $IndentChar; $Object.WriteContentTo($XW); Stringify (Here $SW) $Type}
 				ElseIf ($Object -is [System.Data.DataTable]) {Stringify $Object.Rows}
 				ElseIf ($Type.Name -eq "OrderedDictionary") {Stringify $Object ordered}
 				ElseIf ($Object -is [ValueType]) {Stringify "'$($Object)'" $Type}
