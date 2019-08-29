@@ -63,3 +63,6 @@
 3.2.8     2019-06-18 Ronald Bode Handling streamed object as individual objects
 3.2.9     2019-06-25 Ronald Bode No trailing space in any lines
 3.2.10    2019-06-25 Ronald Bode Preserve object property orders
+3.2.11    2019-08-27 zcla        Resolved bug #1: Single quote in Hashtable key
+3.2.12    2019-08-29 Ronald Bode Support for SemVer type
+3.2.13    2019-08-29 Ronald Bode Using .isPrimitive property rather than nummeric type table 
