@@ -101,7 +101,7 @@ PS C:\>Get-Host | ConvertTo-Expression -Depth 4
 ## Inputs
 `Any`. Each objects provided through the pipeline will converted to an
 expression. To concatinate all piped objects in a single expression,
-use the unary comma operator, like: `,Object | ConvertTo-Expression`
+use the unary comma operator, e.g.: `,$Object | ConvertTo-Expression`
 
 ## Outputs
 `System.Management.Automation.ScriptBlock`. `ConvertTo-Expression` returns
