@@ -15,7 +15,7 @@ Function Test-Format ([String]$Expression, [Switch]$Strong, [Int]$Expand = 9) {
 
 Describe 'ConvertTo-Expression' {
 	
-	$Version  = $PSVersionTable.PSVersion
+	$Version  = [Version]'1.2.3.4'
 	$Guid = [GUID]'5f167621-6abe-4153-a26c-f643e1716720'
 	$TimeSpan = New-TimeSpan -Hour 1 -Minute 25
 	$DateTime = Get-Date
@@ -1133,5 +1133,12 @@ World
 			$Actual.Child.Parent.Name | Should -Be $Parent.Child.Parent.Name
 		}
 	}
-}
 
+	Context 'Bug #1 Single quote in Hashtable key' {
+		Test-Format "@{'ab' = 'a''b'}"
+		Test-Format "@{'a''b' = 'ab'}"
+		Test-Format "[pscustomobject]@{'ab' = 'a''b'}"
+		Test-Format "[pscustomobject]@{'a''b' = 'ab'}"
+	}
+
+}
