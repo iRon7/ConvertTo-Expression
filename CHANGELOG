@@ -65,4 +65,5 @@
 3.2.10    2019-06-25 Ronald Bode Preserve object property orders
 3.2.11    2019-08-27 zcla        Resolved bug #1: Single quote in Hashtable key
 3.2.12    2019-08-29 Ronald Bode Support for SemVer type
-3.2.13    2019-08-29 Ronald Bode Using .isPrimitive property rather than nummeric type table 
+3.2.13    2019-08-29 Ronald Bode Using .isPrimitive property rather than numeric type table 
+3.2.15    2019-10-18 Ronald Bode Support for valued arrays (use -Strong)
