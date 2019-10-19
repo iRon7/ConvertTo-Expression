@@ -47,6 +47,7 @@ Describe 'ConvertTo-Expression' {
 		Decimal    = [Decimal]69
 		Single     = [Single]70
 		Double     = [Double]71
+		Adsi       = [ADSI]'WinNT://WORKGROUP/./Administrator'
 		DateTime   = $DateTime
 		TimeSpan   = $TimeSpan
 		Version    = $Version
@@ -99,6 +100,7 @@ Describe 'ConvertTo-Expression' {
 			$Actual.Single      | Should -Be $Object.Single
 			$Actual.Double      | Should -Be $Object.Double
 			$Actual.Long        | Should -Be $Object.Long
+			$Actual.Adsi        | Should -BeOfType [Adsi]
 			$Actual.DateTime    | Should -Be $DateTime
 			$Actual.TimeSpan    | Should -Be $TimeSpan
 			$Actual.Version     | Should -Be $Version
@@ -142,6 +144,7 @@ Describe 'ConvertTo-Expression' {
 			$Actual.Single      | Should -Be $Object.Single
 			$Actual.Double      | Should -Be $Object.Double
 			$Actual.Long        | Should -Be $Object.Long
+			$Actual.Adsi        | Should -BeOfType [Adsi]
 			$Actual.DateTime    | Should -Be $DateTime
 			$Actual.TimeSpan    | Should -Be $TimeSpan
 			$Actual.Guid        | Should -Be $Guid
@@ -185,6 +188,7 @@ Describe 'ConvertTo-Expression' {
 			$Actual.Single      | Should-BeEqualTo $Object.Single
 			$Actual.Double      | Should-BeEqualTo $Object.Double
 			$Actual.Long        | Should-BeEqualTo $Object.Long
+			$Actual.Adsi        | Should -BeOfType [Adsi]
 			$Actual.DateTime    | Should-BeEqualTo $DateTime
 			$Actual.TimeSpan    | Should-BeEqualTo $TimeSpan
 			$Actual.Version     | Should-BeEqualTo $Version
@@ -1211,6 +1215,31 @@ World
 			$Actual.Child.Parent.Name | Should -Be $Parent.Child.Parent.Name
 		}
 	}
+	
+	Context 'Credentials and SecureString' {
+		
+		$Username = 'Username'
+		$Password = 'P@ssword1'
+		$SecureString = $Password | ConvertTo-SecureString -AsPlainText -Force
+		$Credential = New-Object PSCredential $Username, $SecureString
+		
+		It "Default expression" {
+			$Expression = $Credential | ConvertTo-Expression
+			
+			$Actual = &$Expression
+			$Actual.UserName | Should -Be $Username
+			$Actual.GetNetworkCredential().password | Should -Be $Password
+		}
+		
+		It "Strong expression" {
+			$Expression = $Credential | ConvertTo-Expression -Strong
+			
+			$Actual = &$Expression
+			$Actual.UserName | Should -Be $Username
+			$Actual.GetNetworkCredential().password | Should -Be $Password
+		}
+	}
+
 
 	Context 'Bug #1 Single quote in Hashtable key' {
 		Test-Format "@{'ab' = 'a''b'}"
@@ -1220,3 +1249,4 @@ World
 	}
 
 }
+
