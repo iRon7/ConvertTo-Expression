@@ -1,5 +1,5 @@
 <#PSScriptInfo
-.VERSION 3.2.16
+.VERSION 3.2.19
 .GUID 5f167621-6abe-4153-a26c-f643e1716720
 .AUTHOR Ronald Bode (iRon)
 .DESCRIPTION Stringifys an object to a PowerShell expression (PSON, PowerShell Object Notation).
@@ -176,19 +176,25 @@ Function ConvertTo-Expression {
 		Function Serialize($Object, $Iteration, $Indent) {
 			Function Quote ([String]$Item) {"'$($Item.Replace('''', ''''''))'"}
 			Function Here ([String]$Item) {If ($Item -Match '[\r\n]') {"@'$NewLine$Item$NewLine'@$NewLine"} Else {Quote $Item}}
-			Function Stringify ($Object, $Cast = $Type) {
+			Function Stringify ($Object, $Cast = $Type, $Convert) {
 				$Casted = $PSBoundParameters.ContainsKey('Cast')
-				Function Prefix {If ($Explore) {If ($Strong) {"[$Type]"}} ElseIf ($Strong -or $Casted) {If ($Cast) {"[$Cast]"}}}
+				Function Prefix($Object, [Switch]$Parenthesis) {
+					If ($Convert) {If ($ListItem) {$Object = "($Convert $Object)"} Else {$Object = "$Convert $Object"}}
+					If ($Parenthesis) {$Object = "($Object)"}
+					If ($Explore) {If ($Strong) {"[$Type]$Object"} Else {$Object}}
+					ElseIf ($Strong -or $Casted) {If ($Cast) {"[$Cast]$Object"}}
+					Else {$Object}
+				}
 				Function Iterate($Object, [Switch]$Strong = $Strong, [Switch]$ListItem, [Switch]$Level) {
 					If ($Iteration -lt $Depth) {Serialize $Object -Iteration ($Iteration + 1) -Indent ($Indent + 1 - [Int][Bool]$Level)} Else {"'...'"}
 				}
-				If ($Object -is [String]) {(Prefix) + $Object} Else {
+				If ($Object -is [String]) {Prefix $Object} Else {
 					$List, $Properties = $Null; $Methods = $Object.PSObject.Methods.Name
 					If ($Methods -Contains 'GetEnumerator') {
 						If ($Methods -Contains 'get_Keys' -and $Methods -Contains 'get_Values') {
 							$List = [Ordered]@{}; ForEach ($Key in $Object.get_Keys()) {$List[(Quote $Key)] = Iterate $Object[$Key]}
 						} Else {
-							$Level = $Count -eq 1 -or ($Null -eq $Indent -and !$Explore -and !$Strong)
+							$Level = @($Object).Count -eq 1 -or ($Null -eq $Indent -and !$Explore -and !$Strong)
 							$StrongItem = $Strong -and $Type.Name -eq 'Object[]'
 							$List = @(ForEach ($Item in $Object) {
 								Iterate $Item -ListItem -Level:$Level -Strong:$StrongItem
@@ -201,47 +207,49 @@ Function ConvertTo-Expression {
 					}
 					If ($List -is [Array]) {
 						If (!$Casted -and ($Type.Name -eq 'Object[]' -or "$Type".Contains('.'))) {$Cast = 'array'}
-						If (!$List.Count) {(Prefix) + '@()'}
+						If (!$List.Count) {Prefix '@()'}
 						ElseIf ($List.Count -eq 1) {
-							If ($Strong) {(Prefix) + "$List"}
+							If ($Strong) {Prefix "$List"}
 							ElseIf ($ListItem) {"(,$List)"}
 							Else {",$List"}
 						}
 						ElseIf ($Indent -ge $Expand - 1 -or $Type.GetElementType().IsPrimitive) {
 							$Content = If ($Expand -ge 0) {$List -Join ', '} Else {$List -Join ','}
-							If ($ListItem -or $Strong) {(Prefix) + "($Content)"} Else {$Content}
+							Prefix -Parenthesis:($ListItem -or $Strong) $Content
 						}
-						ElseIf ($Null -eq $Indent -and !$Strong) {$List -Join ",$NewLine"}
+						ElseIf ($Null -eq $Indent -and !$Strong -and !$Convert) {Prefix ($List -Join ",$NewLine")}
 						Else {
 							$LineFeed = $NewLine + ($Tab * $Indent)
 							$Content = "$LineFeed$Tab" + ($List -Join ",$LineFeed$Tab")
-							If ($ListItem -or $Strong) {(Prefix) + "($Content$LineFeed)"} Else {$Content}
+							If ($Convert) {$Content = "($Content)"}
+							If ($ListItem -or $Strong) {Prefix -Parenthesis "$Content$LineFeed"} Else {Prefix $Content}
 						}
 					} ElseIf ($List -is [System.Collections.Specialized.OrderedDictionary]) {
 						If (!$Casted) {If ($Properties) {$Casted = $True; $Cast = 'pscustomobject'} Else {$Cast = 'hashtable'}}
-						If (!$List.Count) {(Prefix) + '@{}'}
-						ElseIf ($Expand -lt 0) {(Prefix) + '@{' + (@(ForEach ($Key in $List.get_Keys()) {"$Key=$($List.$Key)"}) -Join ';') + '}'}
+						If (!$List.Count) {Prefix '@{}'}
+						ElseIf ($Expand -lt 0) {Prefix ('@{' + (@(ForEach ($Key in $List.get_Keys()) {"$Key=$($List.$Key)"}) -Join ';') + '}')}
 						ElseIf ($List.Count -eq 1 -or $Indent -ge $Expand - 1) {
-							(Prefix) + '@{' + (@(ForEach ($Key in $List.get_Keys()) {"$Key = $($List.$Key)"}) -Join '; ') + '}'
+							Prefix ('@{' + (@(ForEach ($Key in $List.get_Keys()) {"$Key = $($List.$Key)"}) -Join '; ') + '}')
 						} Else {
 							$LineFeed = $NewLine + ($Tab * $Indent)
-							(Prefix) + "@{$LineFeed$Tab" + (@(ForEach ($Key in $List.get_Keys()) {
+							Prefix ("@{$LineFeed$Tab" + (@(ForEach ($Key in $List.get_Keys()) {
 								If (($List.$Key)[0] -NotMatch '[\S]') {"$Key =$($List.$Key)".TrimEnd()} Else {"$Key = $($List.$Key)".TrimEnd()}
-							}) -Join "$LineFeed$Tab") + "$LineFeed}"
+							}) -Join "$LineFeed$Tab") + "$LineFeed}")
 						}
 					}
-					Else {(Prefix) + ",$List"}
+					Else {Prefix ",$List"}
 				}
 			}
 			If ($Null -eq $Object) {"`$Null"} Else {
 				$Type = $Object.GetType()
 				If ($Object -is [Boolean]) {If ($Object) {Stringify '$True'} Else {Stringify '$False'}}
-				ElseIf ($Object -is [Char]) {Stringify "'$($Object)'" $Type}
+				ElseIf ($Object -is [Adsi]) {Stringify "'$($Object.ADsPath)'" $Type}
+				ElseIf ('Char', 'mailaddress', 'Regex', 'Semver', 'Type', 'Version', 'Uri' -Contains $Type.Name) {Stringify "'$($Object)'" $Type}
 				ElseIf ($Type.IsPrimitive) {Stringify "$Object"}
 				ElseIf ($Object -is [String]) {Stringify (Here $Object)}
+				ElseIf ($Object -is [SecureString]) {Stringify "'$($Object | ConvertFrom-SecureString)'" -Convert 'ConvertTo-SecureString'}
+				ElseIf ($Object -is [PSCredential]) {Stringify $Object.Username, $Object.Password -Convert 'New-Object PSCredential'}
 				ElseIf ($Object -is [DateTime]) {Stringify "'$($Object.ToString('o'))'" $Type}
-				ElseIf ($Object -is [Version] -or $Type.Name -eq 'SemVer') {Stringify "'$Object'" $Type}
-				ElseIf ('semver' -as [type] -and $Object -is [semver]) {Stringify "'$Object'" 'semver'}
 				ElseIf ($Object -is [Enum]) {If ("$Type".Contains('.')) {Stringify "$(0 + $Object)"} Else {Stringify "'$Object'" $Type}}
 				ElseIf ($Object -is [ScriptBlock]) {If ($Object -Match "\#.*?$") {Stringify "{$Object$NewLine}"} Else {Stringify "{$Object}"}}
 				ElseIf ($Object -is [RuntimeTypeHandle]) {Stringify "$($Object.Value)"}
@@ -250,7 +258,7 @@ Function ConvertTo-Expression {
 					$XW.Formatting = If ($Indent -lt $Expand - 1) {'Indented'} Else {'None'}
 					$XW.Indentation = $Indentation; $XW.IndentChar = $IndentChar; $Object.WriteContentTo($XW); Stringify (Here $SW) $Type}
 				ElseIf ($Object -is [System.Data.DataTable]) {Stringify $Object.Rows}
-				ElseIf ($Type.Name -eq "OrderedDictionary") {Stringify $Object ordered}
+				ElseIf ($Type.Name -eq "OrderedDictionary") {Stringify $Object 'ordered'}
 				ElseIf ($Object -is [ValueType]) {Stringify "'$($Object)'" $Type}
 				Else {Stringify $Object}
 			}
