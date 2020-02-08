@@ -20,7 +20,7 @@ $Object = Invoke-Expression [String]($Object | ConverTo-Expression)
 An expression that is stored in a PowerShell (`.ps1`) file might also
 be directly invoked by the PowerShell dot-sourcing technique, e.g.:
 ```powershell
-$Object | ConvertTo=-Expression | Out-File .\Expression.ps1
+$Object | ConvertTo-Expression | Out-File .\Expression.ps1
 $Object = . .\Expression.ps1
 ```
 
