@@ -1,15 +1,19 @@
-$here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path).Replace(".Tests.", ".")
-. "$here\$sut"
+. "$PSScriptRoot\..\$sut"
 
 Function Should-BeEqualTo ($Value2, [Parameter(ValueFromPipeLine = $True)]$Value1) {
 	$Value1 | Should -Be $Value2
 	$Value1 | Should -BeOfType $Value2.GetType().Name
 }
 
-Function Test-Format ([String]$Expression, [Switch]$Strong, [Int]$Expand = 9) {
+Function Test-Format ([String]$Expression, [Switch]$Strong, [Int]$Expand = 9, [switch]$UsePipeline) {
 	$Object = &([ScriptBlock]::Create("$Expression"))
-	$Actual = ConvertTo-Expression $Object -Strong:$Strong -Expand $Expand
+	$Actual = if ($UsePipeline)	{
+		$Object | ConvertTo-Expression -Strong:$Strong -Expand $Expand
+	}
+	else {
+		ConvertTo-Expression $Object -Strong:$Strong -Expand $Expand
+	}
 	It "$Expression" {"$Actual" | Should -Be "$Expression"}
 }
 
@@ -522,6 +526,180 @@ World
 	'Object' = [pscustomobject]@{'Name' = 'Value'}
 }
 "@
+	}
+
+	Context 'default formatting with pipeline support' {
+
+		Test-Format "1" -UsePipeline
+
+		Test-Format "'One'" -UsePipeline
+
+#		Test-Format ",'One'" -UsePipeline
+
+		Test-Format @"
+1,
+2,
+3
+"@ -UsePipeline
+
+		Test-Format @"
+'One',
+'Two',
+'Three'
+"@ -UsePipeline
+
+		Test-Format @"
+'One',
+'Two',
+'Three',
+'Four'
+"@ -UsePipeline
+
+		Test-Format @"
+'One',
+(,'Two'),
+'Three',
+'Four'
+"@ -UsePipeline
+
+		Test-Format @"
+'One',
+(
+	'Two',
+	'Three'
+),
+'Four'
+"@ -UsePipeline
+
+		Test-Format @"
+'One',
+@{'Two' = 2},
+'Three',
+'Four'
+"@ -UsePipeline
+
+		Test-Format @"
+[pscustomobject]@{'value' = 1},
+[pscustomobject]@{'value' = 2},
+[pscustomobject]@{'value' = 3}
+"@ -UsePipeline
+
+		Test-Format @"
+[pscustomobject]@{
+	'One' = 1
+	'Two' = 2
+	'Three' = 3
+	'Four' = 4
+}
+"@ -UsePipeline
+
+		Test-Format @"
+'One',
+[ordered]@{
+	'Two' = 2
+	'Three' = 3
+},
+'Four'
+"@ -UsePipeline
+
+		Test-Format "@{'One' = 1}"
+
+		Test-Format @"
+[ordered]@{
+	'One' = 1
+	'Two' = 2
+	'Three' = 3
+	'Four' = 4
+}
+"@ -UsePipeline
+
+		Test-Format @"
+[ordered]@{
+	'One' = 1
+	'Two' = 2
+	'Three.1' = ,3.1
+	'Four' = 4
+}
+"@ -UsePipeline
+
+		Test-Format @"
+[ordered]@{
+	'One' = 1
+	'Two' = 2
+	'Three.12' =
+		3.1,
+		3.2
+	'Four' = 4
+}
+"@ -UsePipeline
+
+		Test-Format @"
+[ordered]@{
+	'One' = 1
+	'Two' = 2
+	'Three' = @{'One' = 3.1}
+	'Four' = 4
+}
+"@ -UsePipeline
+
+		Test-Format @"
+[ordered]@{
+	'One' = 1
+	'Two' = 2
+	'Three' = [ordered]@{
+		'One' = 3.1
+		'Two' = 3.2
+	}
+	'Four' = 4
+}
+"@ -UsePipeline
+
+		Test-Format @"
+[ordered]@{
+	'String' = 'String'
+	'HereString' = @'
+Hello
+World
+'@
+	'Int' = 67
+	'Double' = 1.2
+	'Long' = 1234567890123456
+	'DateTime' = [datetime]'1963-10-07T17:56:53.8139055+02:00'
+	'Version' = [version]'1.2.34567.890'
+	'Guid' = [guid]'5f167621-6abe-4153-a26c-f643e1716720'
+	'Script' = {2 * 3}
+	'Array' =
+		'One',
+		'Two',
+		'Three',
+		'Four'
+	'ByteArray' =
+		1,
+		2,
+		3
+	'StringArray' =
+		'One',
+		'Two',
+		'Three'
+	'EmptyArray' = @()
+	'SingleValueArray' = ,'one'
+	'SubArray' =
+		'One',
+		(
+			'Two',
+			'Three'
+		),
+		'Four'
+	'HashTable' = @{'Name' = 'Value'}
+	'Ordered' = [ordered]@{
+		'One' = 1
+		'Two' = 2
+		'Three' = 3
+		'Four' = 4
+	}
+	'Object' = [pscustomobject]@{'Name' = 'Value'}
+}
+"@ -UsePipeline
 	}
 
 	Context 'strong formatting' {
