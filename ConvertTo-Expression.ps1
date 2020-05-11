@@ -1,5 +1,5 @@
 <#PSScriptInfo
-.VERSION 3.2.19
+.VERSION 3.3.0
 .GUID 5f167621-6abe-4153-a26c-f643e1716720
 .AUTHOR Ronald Bode (iRon)
 .DESCRIPTION Stringifys an object to a PowerShell expression (PSON, PowerShell Object Notation).
@@ -22,21 +22,20 @@ Function ConvertTo-Expression {
 		Serializes an object to a PowerShell expression.
 
 	.DESCRIPTION
-		The ConvertTo-Expression cmdlet converts (serialize) an object to a
+		The ConvertTo-Expression cmdlet converts (serializes) an object to a
 		PowerShell expression. The object can be stored in a variable, file or
 		any other common storage for later use or to be ported to another
 		system.
 
-		Converting back from an expression
-		An expression can be restored to an object by preceding it with an
-		ampersand (&):
+		An expression can be restored to an object using the native
+		Invoke-Expression cmdlet:
 
-			$Object = &($Object | ConverTo-Expression)
+			$Object = Invoke-Expression ($Object | ConverTo-Expression)
 
-		An expression that is casted to a string can be restored to an
-		object using the native Invoke-Expression cmdlet:
+		Or Converting it to a [ScriptBlock] and invoking it with cmdlets
+		along with `Invoke-Command` or using the call operator (`&`):
 
-			$Object = Invoke-Expression [String]($Object | ConverTo-Expression)
+			$Object = &([ScriptBlock]::Create($Object | ConverTo-Expression))
 
 		An expression that is stored in a PowerShell (.ps1) file might also
 		be directly invoked by the PowerShell dot-sourcing technique, e.g.:
@@ -44,15 +43,19 @@ Function ConvertTo-Expression {
 			$Object | ConvertTo-Expression | Out-File .\Expression.ps1
 			$Object = . .\Expression.ps1
 
+		Warning: Invoking partly trusted input with Invoke-Expression or
+		[ScriptBlock]::Create() methods could be abused by malicious code
+		injections.
+
 	.INPUTS
 		Any. Each objects provided through the pipeline will converted to an
 		expression. To concatinate all piped objects in a single expression,
 		use the unary comma operator, e.g.: ,$Object | ConvertTo-Expression
 
 	.OUTPUTS
-		System.Management.Automation.ScriptBlock[]. ConvertTo-Expression
-		returns a PowerShell expression (ScriptBlock) for each input object.
-		A PowerShell expression default display output is a Sytem.String.
+		String[]. ConvertTo-Expression returns a PowerShell expression
+		(ScriptBlock) for each input object. A PowerShell expression default
+		display output is a Sytem.String.
 
 	.PARAMETER InputObject
 		Specifies the objects to convert to a PowerShell expression. Enter a
@@ -166,11 +169,10 @@ Function ConvertTo-Expression {
 #>
 	[CmdletBinding()][OutputType([ScriptBlock])]Param (
 		[Parameter(ValueFromPipeLine = $True)][Alias('InputObject')]$Object, [Int]$Depth = 9, [Int]$Expand = $Depth,
-		[Int]$Indentation = 1, [String]$IndentChar = "`t", [Switch]$Strong, [Switch]$Explore, [Switch]$Concatenate,
+		[Int]$Indentation = 1, [String]$IndentChar = "`t", [Switch]$Strong, [Switch]$Explore,
 		[String]$NewLine = [System.Environment]::NewLine
 	)
 	Begin {
-		If (!$PSCmdlet.MyInvocation.ExpectingInput) {If ($Concatenate) {Write-Warning 'The concatenate switch only applies to pipeline input'} Else {$Concatenate = $True}}
 		$ListItem = $Null
 		$Tab = $IndentChar * $Indentation
 		Function Serialize($Object, $Iteration, $Indent) {
@@ -227,13 +229,13 @@ Function ConvertTo-Expression {
 					} ElseIf ($List -is [System.Collections.Specialized.OrderedDictionary]) {
 						If (!$Casted) {If ($Properties) {$Casted = $True; $Cast = 'pscustomobject'} Else {$Cast = 'hashtable'}}
 						If (!$List.Count) {Prefix '@{}'}
-						ElseIf ($Expand -lt 0) {Prefix ('@{' + (@(ForEach ($Key in $List.get_Keys()) {"$Key=$($List.$Key)"}) -Join ';') + '}')}
+						ElseIf ($Expand -lt 0) {Prefix ('@{' + (@(ForEach ($Key in $List.get_Keys()) {"$Key=" + $List[$Key]}) -Join ';') + '}')}
 						ElseIf ($List.Count -eq 1 -or $Indent -ge $Expand - 1) {
-							Prefix ('@{' + (@(ForEach ($Key in $List.get_Keys()) {"$Key = $($List.$Key)"}) -Join '; ') + '}')
+							Prefix ('@{' + (@(ForEach ($Key in $List.get_Keys()) {"$Key = " + $List[$Key]}) -Join '; ') + '}')
 						} Else {
 							$LineFeed = $NewLine + ($Tab * $Indent)
 							Prefix ("@{$LineFeed$Tab" + (@(ForEach ($Key in $List.get_Keys()) {
-								If (($List.$Key)[0] -NotMatch '[\S]') {"$Key =$($List.$Key)".TrimEnd()} Else {"$Key = $($List.$Key)".TrimEnd()}
+								If (($List[$Key])[0] -NotMatch '[\S]') {"$Key =" + $List[$Key].TrimEnd()} Else {"$Key = " + $List[$Key].TrimEnd()}
 							}) -Join "$LineFeed$Tab") + "$LineFeed}")
 						}
 					}
@@ -265,7 +267,6 @@ Function ConvertTo-Expression {
 		}
 	}
 	Process {
-		$Expression = (Serialize $Object).TrimEnd()
-		Try {[ScriptBlock]::Create($Expression)} Catch {$PSCmdlet.WriteError($_); $Expression}
+		(Serialize $Object).TrimEnd()
 	}
 }; Set-Alias ctex ConvertTo-Expression
