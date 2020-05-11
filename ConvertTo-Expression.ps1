@@ -171,6 +171,8 @@ Function ConvertTo-Expression {
 	)
 	Begin {
 		If (!$PSCmdlet.MyInvocation.ExpectingInput) {If ($Concatenate) {Write-Warning 'The concatenate switch only applies to pipeline input'} Else {$Concatenate = $True}}
+		
+		$allObjects = New-Object System.Collections.ArrayList
 		$ListItem = $Null
 		$Tab = $IndentChar * $Indentation
 		Function Serialize($Object, $Iteration, $Indent) {
@@ -265,7 +267,27 @@ Function ConvertTo-Expression {
 		}
 	}
 	Process {
-		$Expression = (Serialize $Object).TrimEnd()
-		Try {[ScriptBlock]::Create($Expression)} Catch {$PSCmdlet.WriteError($_); $Expression}
+		[void]$allObjects.Add($Object)
 	}
-}; Set-Alias ctex ConvertTo-Expression
+	End {
+		if ($allObjects.Count -eq 1)
+        {
+            $expression = (Serialize -Object $allObjects[0]).TrimEnd()
+        }
+        else
+        {
+            $expression = (Serialize -Object $allObjects.ToArray()).TrimEnd()
+        }
+        try
+        {
+            [scriptblock]::Create($expression)
+        }
+        catch
+        {
+            $PSCmdlet.WriteError($_)
+            $expression
+        }
+	}
+}
+
+Set-Alias ctex ConvertTo-Expression
