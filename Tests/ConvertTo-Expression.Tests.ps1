@@ -85,7 +85,7 @@ Describe 'ConvertTo-Expression' {
 			
 			$Expression = $Object | ConvertTo-Expression
 			
-			$Actual = &$Expression
+			$Actual = &([ScriptBlock]::Create($Expression))
 			
 			$Actual.String      | Should -Be $Object.String
 			$Actual.Text        | Should -Be $Object.Text
@@ -129,7 +129,7 @@ Describe 'ConvertTo-Expression' {
 			
 			$Expression = $Object | ConvertTo-Expression -Expand -1
 			
-			$Actual = &$Expression
+			$Actual = &([ScriptBlock]::Create($Expression))
 			
 			$Actual.String      | Should -Be $Object.String
 			$Actual.Text        | Should -Be $Object.Text
@@ -173,7 +173,7 @@ Describe 'ConvertTo-Expression' {
 			
 			$Expression = $Object | ConvertTo-Expression -Strong
 			
-			$Actual = &$Expression
+			$Actual = &([ScriptBlock]::Create($Expression))
 			
 			$Actual.String      | Should-BeEqualTo $Object.String
 			$Actual.Text        | Should-BeEqualTo $Object.Text
@@ -220,7 +220,7 @@ Describe 'ConvertTo-Expression' {
 			
 			$Expression = $Calendar | ConvertTo-Expression
 			
-			$Actual = &$Expression
+			$Actual = &([ScriptBlock]::Create($Expression))
 		
 			$Actual.AlgorithmType        | Should -Be $Calendar.AlgorithmType
 			$Actual.CalendarType         | Should -Be $Calendar.CalendarType
@@ -240,7 +240,7 @@ Describe 'ConvertTo-Expression' {
 			
 			"$Expression".Contains(" ") | Should -Be $False
 			
-			$Actual = &$Expression
+			$Actual = &([ScriptBlock]::Create($Expression))
 		
 			$Actual.Account | Should-BeEqualTo $User.Account
 			$Actual.Domain  | Should-BeEqualTo $User.Domain
@@ -254,7 +254,7 @@ Describe 'ConvertTo-Expression' {
 			
 			$Expression = $Date | ConvertTo-Expression 
 			
-			$Actual = &$Expression
+			$Actual = &([ScriptBlock]::Create($Expression))
 
 			$Actual.Date        | Should -Be $Date.Date
 			$Actual.DateTime    | Should -Be $Date.DateTime
@@ -283,7 +283,7 @@ Describe 'ConvertTo-Expression' {
 
 			$Expression = $WinInitProcess | ConvertTo-Expression 
 			
-			$Actual = &$Expression
+			$Actual = &([ScriptBlock]::Create($Expression))
 			
 			# $Actual.ProcessName | Should-BeEqualTo $WinInitProcess.ProcessName
 			# $Actual.StartInfo.Environment['TEMP'] | Should -Be $WinInitProcess.StartInfo.Environment['TEMP']
@@ -295,7 +295,7 @@ Describe 'ConvertTo-Expression' {
 
 			$Expression = $WinInitProcess | ConvertTo-Expression -Strong
 			
-			$Actual = &$Expression
+			$Actual = &([ScriptBlock]::Create($Expression))
 			
 			# $Actual.ProcessName | Should-BeEqualTo $WinInitProcess.ProcessName
 			# $Actual.StartInfo.Environment['TEMP'] | Should -Be $WinInitProcess.StartInfo.Environment['TEMP']
@@ -308,7 +308,7 @@ Describe 'ConvertTo-Expression' {
 
 			$Expression = $MyInvocation | ConvertTo-Expression 
 			
-			$Actual = &$Expression
+			$Actual = &([ScriptBlock]::Create($Expression))
 			
 			$Actual.MyCommand.Name | Should -Be $MyInvocation.MyCommand.Name
 			
@@ -319,7 +319,7 @@ Describe 'ConvertTo-Expression' {
 
 			$Expression = $MyInvocation | ConvertTo-Expression -Strong
 			
-			$Actual = &$Expression
+			$Actual = &([ScriptBlock]::Create($Expression))
 			
 			$Actual.MyCommand.Name | Should -Be $MyInvocation.MyCommand.Name
 			
@@ -1192,7 +1192,7 @@ World
 			$Object.Parent.Child.Parent = $Object.Parent
 			$Expression = $Object | ConvertTo-Expression
 			
-			$Actual = &$Expression
+			$Actual = &([ScriptBlock]::Create($Expression))
 			
 			$Actual.Parent.Child.Name | Should -Be $Object.Parent.Child.Name
 	
@@ -1210,7 +1210,7 @@ World
 			
 			$Expression = $Parent | ConvertTo-Expression
 			
-			$Actual = &$Expression
+			$Actual = &([ScriptBlock]::Create($Expression))
 			
 			$Actual.Child.Parent.Name | Should -Be $Parent.Child.Parent.Name
 		}
@@ -1226,7 +1226,7 @@ World
 		It "Default expression" {
 			$Expression = $Credential | ConvertTo-Expression
 			
-			$Actual = &$Expression
+			$Actual = &([ScriptBlock]::Create($Expression))
 			$Actual.UserName | Should -Be $Username
 			$Actual.GetNetworkCredential().password | Should -Be $Password
 		}
@@ -1234,7 +1234,7 @@ World
 		It "Strong expression" {
 			$Expression = $Credential | ConvertTo-Expression -Strong
 			
-			$Actual = &$Expression
+			$Actual = &([ScriptBlock]::Create($Expression))
 			$Actual.UserName | Should -Be $Username
 			$Actual.GetNetworkCredential().password | Should -Be $Password
 		}
@@ -1249,4 +1249,3 @@ World
 	}
 
 }
-
