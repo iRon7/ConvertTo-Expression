@@ -7,15 +7,15 @@ file or any other common storage for later use or to be ported to
 another system.
 
 #### Converting back *from* an expression  
-An expression can be restored to an object by preceding it with an
-ampersand (`&`):
+An expression can be restored to an object using the native
+`Invoke-Expression` cmdlet:
 ```powershell
-$Object = &($Object | ConverTo-Expression)
+$Object = Invoke-Expression ($Object | ConverTo-Expression)
 ```
-An expression that is casted to a string can be restored to an
-object using the native `Invoke-Expression` cmdlet:
+Or Converting it to a `[ScriptBlock]` and invoking it with cmdlets
+along with `Invoke-Command` or using the call operator (`&`):
 ```powershell
-$Object = Invoke-Expression [String]($Object | ConverTo-Expression)
+$Object = &([ScriptBlock]::Create($Object | ConverTo-Expression))
 ```
 An expression that is stored in a PowerShell (`.ps1`) file might also
 be directly invoked by the PowerShell dot-sourcing technique, e.g.:
@@ -23,6 +23,9 @@ be directly invoked by the PowerShell dot-sourcing technique, e.g.:
 $Object | ConvertTo-Expression | Out-File .\Expression.ps1
 $Object = . .\Expression.ps1
 ```
+***Warning:*** Invoking partly trusted input with Invoke-Expression or
+`[ScriptBlock]::Create()` methods could be abused by malicious code
+injections.
 
 ## Examples
 
@@ -104,9 +107,8 @@ expression. To concatinate all piped objects in a single expression,
 use the unary comma operator, e.g.: `,$Object | ConvertTo-Expression`
 
 ## Outputs
-`System.Management.Automation.ScriptBlock`. `ConvertTo-Expression` returns
-a PowerShell expression (`ScriptBlock`) which default display output is
-a `Sytem.String`.
+`String[]`. ConvertTo-Expression returns a PowerShell expression for
+each input object.
 
 ## Parameters 
 
