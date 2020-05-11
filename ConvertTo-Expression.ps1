@@ -53,9 +53,8 @@ Function ConvertTo-Expression {
 		use the unary comma operator, e.g.: ,$Object | ConvertTo-Expression
 
 	.OUTPUTS
-		String[]. ConvertTo-Expression returns a PowerShell expression
-		(ScriptBlock) for each input object. A PowerShell expression default
-		display output is a Sytem.String.
+		String[]. ConvertTo-Expression returns a PowerShell expression for
+		each input object.
 
 	.PARAMETER InputObject
 		Specifies the objects to convert to a PowerShell expression. Enter a
