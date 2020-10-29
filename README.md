@@ -8,7 +8,7 @@ another system.
 
 ### Installation
 
-The `ConvertTo-Expression` script can be downloaded from the PowerShell Gallery:
+The `ConvertTo-Expression` script can be downloaded from the [PowerShell Gallery](https://www.powershellgallery.com/):
 ```powershell
 Install-Script -Name ConvertTo-Expression
 ```
