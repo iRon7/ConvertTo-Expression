@@ -1,4 +1,12 @@
-# Installation
+# ConvertTo-Expression
+Serializes an object to a PowerShell expression
+
+The ConvertTo-Expression cmdlet converts (serializes) an object to
+a PowerShell expression. The object can be stored in a variable,
+file or any other common storage for later use or to be ported to
+another system.
+
+### Installation
 
 The `ConvertTo-Expression` script can be downloaded from the PowerShell Gallery:
 ```powershell
@@ -8,14 +16,6 @@ As it concerns a standalone script, installation isn't really required. If you d
 ```powershell
 . .\ConvertTo-Expression.ps1
 ```
-
-# ConvertTo-Expression
-Serializes an object to a PowerShell expression
-
-The ConvertTo-Expression cmdlet converts (serializes) an object to
-a PowerShell expression. The object can be stored in a variable,
-file or any other common storage for later use or to be ported to
-another system.
 
 #### Converting back *from* an expression  
 An expression can be restored to an object using the native
