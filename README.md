@@ -1,3 +1,14 @@
+# Installation
+
+The `ConvertTo-Expression` script can be downloaded from the PowerShell Gallery:
+```powershell
+Install-Script -Name ConvertTo-Expression
+```
+As it concerns a standalone script, installation isn't really required. If you don't have administrator rights, you might just download the script (or copy it) to the required location. You might than simply invoke the script using PowerShell [`dot sourcing`](https://docs.microsoft.com/powershell/module/microsoft.powershell.core/about/about_scripts?view=powershell-7#script-scope-and-dot-sourcing):
+```powershell
+. .\ConvertTo-Expression.ps1
+```
+
 # ConvertTo-Expression
 Serializes an object to a PowerShell expression
 
