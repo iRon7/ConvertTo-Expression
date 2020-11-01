@@ -71,3 +71,9 @@
 3.2.19    2019-10-19 Ronald Bode Support Credential and SecureString
 3.2.20    2020-03-20 Ronald Bode Removed (unused) -Concatenate switch
 3.3.0     2020-03-20 Ronald Bode Removed all statements that could exploit for code injection
+3.3.1     2020-08-26 Ronald Bode Fixed NullReferenceException
+3.3.2     2020-08-27 Ronald Bode Using `.psobject.methods['<method name>'] -is [PSMethod]` (slightly faster)
+3.3.3     2020-08-27 Ronald Bode Changed default indent tab character to 4 spaces
+3.3.4     2020-08-27 Ronald Bode Remove quotes in HashTables Keys when possible (https://github.com/iRon7/ConvertTo-Expression/issues/3)
+3.3.5     2020-08-27 Ronald Bode https://github.com/DTW-DanWard/PowerShell-Beautifier (and corrected spaces behind commas)
+3.3.6     2020-08-27 Ronald Bode Fixed #5 ADSI unknown type
