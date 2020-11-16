@@ -53,7 +53,7 @@ Describe 'ConvertTo-Expression' {
             HashTable  = @{city="New York"; currency="Dollar	(`$)"; postalCode=10021; Etc = @("Three", "Four", "Five")}
             Ordered    = [Ordered]@{One = 1; Two = 2; Three = 3; Four = 4}
             Object     = New-Object PSObject -Property @{Name = "One"; Value = 1; Group = @("First", "Last")}
-            DataTable  = $DataTable
+            # DataTable  = $DataTable
             Xml        = [Xml]@"
                 <items>
                     <item id="0001" type="donut">
@@ -116,10 +116,10 @@ Describe 'ConvertTo-Expression' {
             $Actual.Object.Name          | Should -Be $Object.Object.Name
             $Actual.Object.Value         | Should -Be $Object.Object.Value
             $Actual.Object.Group         | Should -Be $Object.Object.Group
-            $Actual.DataTable.Column1[0] | Should -Be $Object.DataTable.Column1[0]
-            $Actual.DataTable.Column1[1] | Should -Be $Object.DataTable.Column1[1]
-            $Actual.DataTable.Column2[0] | Should -Be $Object.DataTable.Column2[0]
-            $Actual.DataTable.Column2[1] | Should -Be $Object.DataTable.Column2[1]
+            # $Actual.DataTable.Column1[0] | Should -Be $Object.DataTable.Column1[0]
+            # $Actual.DataTable.Column1[1] | Should -Be $Object.DataTable.Column1[1]
+            # $Actual.DataTable.Column2[0] | Should -Be $Object.DataTable.Column2[0]
+            # $Actual.DataTable.Column2[1] | Should -Be $Object.DataTable.Column2[1]
         }
 
         It "compress" {
@@ -159,10 +159,10 @@ Describe 'ConvertTo-Expression' {
             $Actual.Object.Name          | Should -Be $Object.Object.Name
             $Actual.Object.Value         | Should -Be $Object.Object.Value
             $Actual.Object.Group         | Should -Be $Object.Object.Group
-            $Actual.DataTable.Column1[0] | Should -Be $Object.DataTable.Column1[0]
-            $Actual.DataTable.Column1[1] | Should -Be $Object.DataTable.Column1[1]
-            $Actual.DataTable.Column2[0] | Should -Be $Object.DataTable.Column2[0]
-            $Actual.DataTable.Column2[1] | Should -Be $Object.DataTable.Column2[1]
+            # $Actual.DataTable.Column1[0] | Should -Be $Object.DataTable.Column1[0]
+            # $Actual.DataTable.Column1[1] | Should -Be $Object.DataTable.Column1[1]
+            # $Actual.DataTable.Column2[0] | Should -Be $Object.DataTable.Column2[0]
+            # $Actual.DataTable.Column2[1] | Should -Be $Object.DataTable.Column2[1]
         }
         
         It "converts strong type" {
@@ -202,10 +202,10 @@ Describe 'ConvertTo-Expression' {
             $Actual.Object.Name          | Should -Be $Object.Object.Name
             $Actual.Object.Value         | Should -Be $Object.Object.Value
             $Actual.Object.Group         | Should -Be $Object.Object.Group
-            $Actual.DataTable.Column1[0] | Should -Be $Object.DataTable.Column1[0]
-            $Actual.DataTable.Column1[1] | Should -Be $Object.DataTable.Column1[1]
-            $Actual.DataTable.Column2[0] | Should -Be $Object.DataTable.Column2[0]
-            $Actual.DataTable.Column2[1] | Should -Be $Object.DataTable.Column2[1]
+            # $Actual.DataTable.Column1[0] | Should -Be $Object.DataTable.Column1[0]
+            # $Actual.DataTable.Column1[1] | Should -Be $Object.DataTable.Column1[1]
+            # $Actual.DataTable.Column2[0] | Should -Be $Object.DataTable.Column2[0]
+            # $Actual.DataTable.Column2[1] | Should -Be $Object.DataTable.Column2[1]
             $Actual.XML                  | Should -BeOfType [System.Xml.XmlDocument]
         }
         
@@ -309,15 +309,51 @@ Describe 'ConvertTo-Expression' {
             
         }
 
-        It "convert MyInvocation (Strong)" {
+        # It "convert MyInvocation (Strong)" {
         
 
-            $Expression = $MyInvocation | ConvertTo-Expression -Strong
+            # $Expression = $MyInvocation | ConvertTo-Expression -Strong
             
+            # $Actual = &([ScriptBlock]::Create($Expression))
+            
+            # $Actual.MyCommand.Name | Should -Be $MyInvocation.MyCommand.Name
+            
+        # }
+    }
+    
+    Describe 'DataTable' {
+
+        It "default" {
+
+            $DataTable = New-Object Data.DataTable
+            $Null = $DataTable.Columns.Add((New-Object Data.DataColumn 'Column1'), [String])
+            $Null = $DataTable.Columns.Add((New-Object Data.DataColumn 'Column2'), [Int])
+            $DataRow = $DataTable.NewRow()
+            $DataRow.Item('Column1') = "A"
+            $DataRow.Item('Column2') = 1
+            $DataTable.Rows.Add($DataRow)
+            $DataRow = $DataTable.NewRow()
+            $DataRow.Item('Column1') = "B"
+            $DataRow.Item('Column2') = 2
+            $DataTable.Rows.Add($DataRow)
+
+            $Expression = ConvertTo-Expression $DataTable
+
             $Actual = &([ScriptBlock]::Create($Expression))
             
-            $Actual.MyCommand.Name | Should -Be $MyInvocation.MyCommand.Name
+            $Actual.Column1[0] | Should -Be $DataTable.Column1[0]
+            $Actual.Column1[1] | Should -Be $DataTable.Column1[1]
+            $Actual.Column2[0] | Should -Be $DataTable.Column2[0]
+            $Actual.Column2[1] | Should -Be $DataTable.Column2[1]
+
+            $Expression = ,$DataTable | ConvertTo-Expression
+
+            $Actual = &([ScriptBlock]::Create($Expression))
             
+            $Actual.Column1[0] | Should -Be $DataTable.Column1[0]
+            $Actual.Column1[1] | Should -Be $DataTable.Column1[1]
+            $Actual.Column2[0] | Should -Be $DataTable.Column2[0]
+            $Actual.Column2[1] | Should -Be $DataTable.Column2[1]
         }
     }
     
@@ -556,7 +592,7 @@ World
 # "@ | Should -BeTrue
 
             Test-Format -Strong @"
-[array](
+[Object[]](
     [string]'One',
     [string]'Two',
     [string]'Three',
@@ -565,18 +601,18 @@ World
 "@ | Should -BeTrue
 
             Test-Format -Strong @"
-[array](
+[Object[]](
     [string]'One',
-    [array][string]'Two',
+    [Object[]][string]'Two',
     [string]'Three',
     [string]'Four'
 )
 "@ | Should -BeTrue
 
             Test-Format -Strong @"
-[array](
+[Object[]](
     [string]'One',
-    [array](
+    [Object[]](
         [string]'Two',
         [string]'Three'
     ),
@@ -585,7 +621,7 @@ World
 "@ | Should -BeTrue
 
             Test-Format -Strong @"
-[array](
+[Object[]](
     [string]'One',
     [hashtable]@{Two = [int]2},
     [string]'Three',
@@ -594,7 +630,7 @@ World
 "@ | Should -BeTrue
 
             Test-Format -Strong @"
-[array](
+[Object[]](
     [pscustomobject]@{value = [int]1},
     [pscustomobject]@{value = [int]2},
     [pscustomobject]@{value = [int]3}
@@ -611,7 +647,7 @@ World
 "@ | Should -BeTrue
 
             Test-Format -Strong @"
-[array](
+[Object[]](
     [string]'One',
     [ordered]@{
         Two = [int]2
@@ -636,7 +672,7 @@ World
 [ordered]@{
     One = [int]1
     Two = [int]2
-    'Three.1' = [array][double]3.1
+    'Three.1' = [Object[]][double]3.1
     Four = [int]4
 }
 "@ | Should -BeTrue
@@ -645,7 +681,7 @@ World
 [ordered]@{
     One = [int]1
     Two = [int]2
-    'Three.12' = [array](
+    'Three.12' = [Object[]](
         [double]3.1,
         [double]3.2
     )
@@ -688,7 +724,7 @@ World
     Version = [version]'1.2.34567.890'
     Guid = [guid]'5f167621-6abe-4153-a26c-f643e1716720'
     Script = [scriptblock]{2 * 3}
-    Array = [array](
+    Array = [Object[]](
         [string]'One',
         [string]'Two',
         [string]'Three',
@@ -700,11 +736,11 @@ World
         'Two',
         'Three'
     )
-    EmptyArray = [array]@()
-    SingleValueArray = [array][string]'one'
-    SubArray = [array](
+    EmptyArray = [Object[]]@()
+    SingleValueArray = [Object[]][string]'one'
+    SubArray = [Object[]](
         [string]'One',
-        [array](
+        [Object[]](
             [string]'Two',
             [string]'Three'
         ),
@@ -878,7 +914,7 @@ World
 # "@ | Should -BeTrue
 
             Test-Format -Strong -Expand 1 @"
-[array](
+[Object[]](
     [string]'One',
     [string]'Two',
     [string]'Three',
@@ -887,24 +923,24 @@ World
 "@ | Should -BeTrue
 
             Test-Format -Strong -Expand 1 @"
-[array](
+[Object[]](
     [string]'One',
-    [array][string]'Two',
+    [Object[]][string]'Two',
     [string]'Three',
     [string]'Four'
 )
 "@ | Should -BeTrue
 
             Test-Format -Strong -Expand 1 @"
-[array](
+[Object[]](
     [string]'One',
-    [array]([string]'Two', [string]'Three'),
+    [Object[]]([string]'Two', [string]'Three'),
     [string]'Four'
 )
 "@ | Should -BeTrue
 
             Test-Format -Strong -Expand 1 @"
-[array](
+[Object[]](
     [string]'One',
     [hashtable]@{Two = [int]2},
     [string]'Three',
@@ -913,7 +949,7 @@ World
 "@ | Should -BeTrue
 
             Test-Format -Strong -Expand 1 @"
-[array](
+[Object[]](
     [pscustomobject]@{value = [int]1},
     [pscustomobject]@{value = [int]2},
     [pscustomobject]@{value = [int]3}
@@ -930,7 +966,7 @@ World
 "@ | Should -BeTrue
 
             Test-Format -Strong -Expand 1 @"
-[array](
+[Object[]](
     [string]'One',
     [ordered]@{Two = [int]2; Three = [int]3},
     [string]'Four'
@@ -952,7 +988,7 @@ World
 [ordered]@{
     One = [int]1
     Two = [int]2
-    'Three.1' = [array][double]3.1
+    'Three.1' = [Object[]][double]3.1
     Four = [int]4
 }
 "@ | Should -BeTrue
@@ -961,7 +997,7 @@ World
 [ordered]@{
     One = [int]1
     Two = [int]2
-    'Three.12' = [array]([double]3.1, [double]3.2)
+    'Three.12' = [Object[]]([double]3.1, [double]3.2)
     Four = [int]4
 }
 "@ | Should -BeTrue
@@ -998,12 +1034,12 @@ World
     Version = [version]'1.2.34567.890'
     Guid = [guid]'5f167621-6abe-4153-a26c-f643e1716720'
     Script = [scriptblock]{2 * 3}
-    Array = [array]([string]'One', [string]'Two', [string]'Three', [string]'Four')
-    ByteArray = [array]([int]1, [int]2, [int]3)
-    StringArray = [array]([string]'One', [string]'Two', [string]'Three')
-    EmptyArray = [array]@()
-    SingleValueArray = [array][string]'one'
-    SubArray = [array]([string]'One', [array]([string]'Two', [string]'Three'), [string]'Four')
+    Array = [Object[]]([string]'One', [string]'Two', [string]'Three', [string]'Four')
+    ByteArray = [Object[]]([int]1, [int]2, [int]3)
+    StringArray = [Object[]]([string]'One', [string]'Two', [string]'Three')
+    EmptyArray = [Object[]]@()
+    SingleValueArray = [Object[]][string]'one'
+    SubArray = [Object[]]([string]'One', [Object[]]([string]'Two', [string]'Three'), [string]'Four')
     HashTable = [hashtable]@{Name = [string]'Value'}
     Ordered = [ordered]@{One = [int]1; Two = [int]2; Three = [int]3; Four = [int]4}
     Object = [pscustomobject]@{Name = [string]'Value'}
@@ -1067,27 +1103,27 @@ World
 
         # Test-Format -Strong -Expand 0 "[string[]]('One', 'Two', 'Three')"
 
-            Test-Format -Strong -Expand 0 "[array]([string]'One', [string]'Two', [string]'Three', [string]'Four')"
+            Test-Format -Strong -Expand 0 "[Object[]]([string]'One', [string]'Two', [string]'Three', [string]'Four')"
 
-            Test-Format -Strong -Expand 0 "[array]([string]'One', [array][string]'Two', [string]'Three', [string]'Four')"
+            Test-Format -Strong -Expand 0 "[Object[]]([string]'One', [Object[]][string]'Two', [string]'Three', [string]'Four')"
 
-            Test-Format -Strong -Expand 0 "[array]([string]'One', [array]([string]'Two', [string]'Three'), [string]'Four')"
+            Test-Format -Strong -Expand 0 "[Object[]]([string]'One', [Object[]]([string]'Two', [string]'Three'), [string]'Four')"
 
-            Test-Format -Strong -Expand 0 "[array]([string]'One', [hashtable]@{Two = [int]2}, [string]'Three', [string]'Four')"
+            Test-Format -Strong -Expand 0 "[Object[]]([string]'One', [hashtable]@{Two = [int]2}, [string]'Three', [string]'Four')"
 
-            Test-Format -Strong -Expand 0 "[array]([pscustomobject]@{value = [int]1}, [pscustomobject]@{value = [int]2}, [pscustomobject]@{value = [int]3})"
+            Test-Format -Strong -Expand 0 "[Object[]]([pscustomobject]@{value = [int]1}, [pscustomobject]@{value = [int]2}, [pscustomobject]@{value = [int]3})"
 
             Test-Format -Strong -Expand 0 "[pscustomobject]@{One = [int]1; Two = [int]2; Three = [int]3; Four = [int]4}"
 
-            Test-Format -Strong -Expand 0 "[array]([string]'One', [ordered]@{Two = [int]2; Three = [int]3}, [string]'Four')"
+            Test-Format -Strong -Expand 0 "[Object[]]([string]'One', [ordered]@{Two = [int]2; Three = [int]3}, [string]'Four')"
 
             Test-Format -Strong -Expand 0 "[hashtable]@{One = [int]1}"
 
             Test-Format -Strong -Expand 0 "[ordered]@{One = [int]1; Two = [int]2; Three = [int]3; Four = [int]4}"
 
-            Test-Format -Strong -Expand 0 "[ordered]@{One = [int]1; Two = [int]2; 'Three.1' = [array][double]3.1; Four = [int]4}"
+            Test-Format -Strong -Expand 0 "[ordered]@{One = [int]1; Two = [int]2; 'Three.1' = [Object[]][double]3.1; Four = [int]4}"
 
-            Test-Format -Strong -Expand 0 "[ordered]@{One = [int]1; Two = [int]2; 'Three.12' = [array]([double]3.1, [double]3.2); Four = [int]4}"
+            Test-Format -Strong -Expand 0 "[ordered]@{One = [int]1; Two = [int]2; 'Three.12' = [Object[]]([double]3.1, [double]3.2); Four = [int]4}"
 
             Test-Format -Strong -Expand 0 "[ordered]@{One = [int]1; Two = [int]2; Three = [hashtable]@{One = [double]3.1}; Four = [int]4}"
 
@@ -1098,7 +1134,7 @@ World
 Hello
 World
 '@
-; Int = [int]67; Double = [double]1.2; Long = [long]1234567890123456; DateTime = [datetime]'1963-10-07T17:56:53.8139055'; Version = [version]'1.2.34567.890'; Guid = [guid]'5f167621-6abe-4153-a26c-f643e1716720'; Script = [scriptblock]{2 * 3}; Array = [array]([string]'One', [string]'Two', [string]'Three', [string]'Four'); ByteArray = [array]([int]1, [int]2, [int]3); StringArray = [array]([string]'One', [string]'Two', [string]'Three'); EmptyArray = [array]@(); SingleValueArray = [array][string]'one'; SubArray = [array]([string]'One', [array]([string]'Two', [string]'Three'), [string]'Four'); HashTable = [hashtable]@{Name = [string]'Value'}; Ordered = [ordered]@{One = [int]1; Two = [int]2; Three = [int]3; Four = [int]4}; Object = [pscustomobject]@{Name = [string]'Value'}}
+; Int = [int]67; Double = [double]1.2; Long = [long]1234567890123456; DateTime = [datetime]'1963-10-07T17:56:53.8139055'; Version = [version]'1.2.34567.890'; Guid = [guid]'5f167621-6abe-4153-a26c-f643e1716720'; Script = [scriptblock]{2 * 3}; Array = [Object[]]([string]'One', [string]'Two', [string]'Three', [string]'Four'); ByteArray = [Object[]]([int]1, [int]2, [int]3); StringArray = [Object[]]([string]'One', [string]'Two', [string]'Three'); EmptyArray = [Object[]]@(); SingleValueArray = [Object[]][string]'one'; SubArray = [Object[]]([string]'One', [Object[]]([string]'Two', [string]'Three'), [string]'Four'); HashTable = [hashtable]@{Name = [string]'Value'}; Ordered = [ordered]@{One = [int]1; Two = [int]2; Three = [int]3; Four = [int]4}; Object = [pscustomobject]@{Name = [string]'Value'}}
 "@ | Should -BeTrue
     }
 
@@ -1157,27 +1193,27 @@ World
 
         # Test-Format -Strong -Expand -1 "[string[]]('One','Two','Three')" | Should -BeTrue
 
-            Test-Format -Strong -Expand -1 "[array]([string]'One',[string]'Two',[string]'Three',[string]'Four')" | Should -BeTrue
+            Test-Format -Strong -Expand -1 "[Object[]]([string]'One',[string]'Two',[string]'Three',[string]'Four')" | Should -BeTrue
 
-            Test-Format -Strong -Expand -1 "[array]([string]'One',[array][string]'Two',[string]'Three',[string]'Four')" | Should -BeTrue
+            Test-Format -Strong -Expand -1 "[Object[]]([string]'One',[Object[]][string]'Two',[string]'Three',[string]'Four')" | Should -BeTrue
 
-            Test-Format -Strong -Expand -1 "[array]([string]'One',[array]([string]'Two',[string]'Three'),[string]'Four')" | Should -BeTrue
+            Test-Format -Strong -Expand -1 "[Object[]]([string]'One',[Object[]]([string]'Two',[string]'Three'),[string]'Four')" | Should -BeTrue
 
-            Test-Format -Strong -Expand -1 "[array]([string]'One',[hashtable]@{Two=[int]2},[string]'Three',[string]'Four')" | Should -BeTrue
+            Test-Format -Strong -Expand -1 "[Object[]]([string]'One',[hashtable]@{Two=[int]2},[string]'Three',[string]'Four')" | Should -BeTrue
 
-            Test-Format -Strong -Expand -1 "[array]([pscustomobject]@{value=[int]1},[pscustomobject]@{value=[int]2},[pscustomobject]@{value=[int]3})" | Should -BeTrue
+            Test-Format -Strong -Expand -1 "[Object[]]([pscustomobject]@{value=[int]1},[pscustomobject]@{value=[int]2},[pscustomobject]@{value=[int]3})" | Should -BeTrue
 
             Test-Format -Strong -Expand -1 "[pscustomobject]@{One=[int]1;Two=[int]2;Three=[int]3;Four=[int]4}" | Should -BeTrue
 
-            Test-Format -Strong -Expand -1 "[array]([string]'One',[ordered]@{Two=[int]2;Three=[int]3},[string]'Four')" | Should -BeTrue
+            Test-Format -Strong -Expand -1 "[Object[]]([string]'One',[ordered]@{Two=[int]2;Three=[int]3},[string]'Four')" | Should -BeTrue
 
             Test-Format -Strong -Expand -1 "[hashtable]@{One=[int]1}" | Should -BeTrue
 
             Test-Format -Strong -Expand -1 "[ordered]@{One=[int]1;Two=[int]2;Three=[int]3;Four=[int]4}" | Should -BeTrue
 
-            Test-Format -Strong -Expand -1 "[ordered]@{One=[int]1;Two=[int]2;'Three.1'=[array][double]3.1;Four=[int]4}" | Should -BeTrue
+            Test-Format -Strong -Expand -1 "[ordered]@{One=[int]1;Two=[int]2;'Three.1'=[Object[]][double]3.1;Four=[int]4}" | Should -BeTrue
 
-            Test-Format -Strong -Expand -1 "[ordered]@{One=[int]1;Two=[int]2;'Three.12'=[array]([double]3.1,[double]3.2);Four=[int]4}" | Should -BeTrue
+            Test-Format -Strong -Expand -1 "[ordered]@{One=[int]1;Two=[int]2;'Three.12'=[Object[]]([double]3.1,[double]3.2);Four=[int]4}" | Should -BeTrue
 
             Test-Format -Strong -Expand -1 "[ordered]@{One=[int]1;Two=[int]2;Three=[hashtable]@{One=[double]3.1};Four=[int]4}" | Should -BeTrue
 
@@ -1188,7 +1224,7 @@ World
 Hello
 World
 '@
-;Int=[int]67;Double=[double]1.2;Long=[long]1234567890123456;DateTime=[datetime]'1963-10-07T17:56:53.8139055';Version=[version]'1.2.34567.890';Guid=[guid]'5f167621-6abe-4153-a26c-f643e1716720';Script=[scriptblock]{2 * 3};Array=[array]([string]'One',[string]'Two',[string]'Three',[string]'Four');ByteArray=[array]([int]1,[int]2,[int]3);StringArray=[array]([string]'One',[string]'Two',[string]'Three');EmptyArray=[array]@();SingleValueArray=[array][string]'one';SubArray=[array]([string]'One',[array]([string]'Two',[string]'Three'),[string]'Four');HashTable=[hashtable]@{Name=[string]'Value'};Ordered=[ordered]@{One=[int]1;Two=[int]2;Three=[int]3;Four=[int]4};Object=[pscustomobject]@{Name=[string]'Value'}}
+;Int=[int]67;Double=[double]1.2;Long=[long]1234567890123456;DateTime=[datetime]'1963-10-07T17:56:53.8139055';Version=[version]'1.2.34567.890';Guid=[guid]'5f167621-6abe-4153-a26c-f643e1716720';Script=[scriptblock]{2 * 3};Array=[Object[]]([string]'One',[string]'Two',[string]'Three',[string]'Four');ByteArray=[Object[]]([int]1,[int]2,[int]3);StringArray=[Object[]]([string]'One',[string]'Two',[string]'Three');EmptyArray=[Object[]]@();SingleValueArray=[Object[]][string]'one';SubArray=[Object[]]([string]'One',[Object[]]([string]'Two',[string]'Three'),[string]'Four');HashTable=[hashtable]@{Name=[string]'Value'};Ordered=[ordered]@{One=[int]1;Two=[int]2;Three=[int]3;Four=[int]4};Object=[pscustomobject]@{Name=[string]'Value'}}
 "@ | Should -BeTrue
 
         }
@@ -1262,6 +1298,45 @@ World
             $Actual = &([ScriptBlock]::Create($Expression))
             $Actual.UserName | Should -Be $Username
             $Actual.GetNetworkCredential().password | Should -Be $Password
+        }
+    }
+}
+
+Describe 'Issues' {
+
+    Context '#6 Consider preserving specific collection types, if they can be initialized from arrays' {
+        
+        BeforeAll {
+            $Collection = (1..5).Where({ $_ % 2 })
+        }
+        
+        It "Default collection" {
+            ConvertTo-Expression $Collection | Should -Be @'
+1,
+3,
+5
+'@
+        }
+
+        It "Strong collection" {
+            ConvertTo-Expression $Collection -Strong | Should -Be @'
+[System.Collections.ObjectModel.Collection[psobject]](
+    1,
+    3,
+    5
+)
+'@
+        }
+
+        It "Collapsed strong expression" {
+            ConvertTo-Expression $Collection -Strong -Expand 0 |
+            Should -Be '[System.Collections.ObjectModel.Collection[psobject]](1, 3, 5)'
+        }
+
+        It "Compressed strong expression" {
+            ConvertTo-Expression $Collection -Strong -Expand -1 | 
+            Should -Be '[System.Collections.ObjectModel.Collection[psobject]](1,3,5)'
+
         }
     }
 }
