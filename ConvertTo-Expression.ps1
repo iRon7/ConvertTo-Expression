@@ -1,5 +1,5 @@
 <#PSScriptInfo
-.VERSION 3.3.6
+.VERSION 3.3.7
 .GUID 5f167621-6abe-4153-a26c-f643e1716720
 .AUTHOR Ronald Bode (iRon)
 .DESCRIPTION Stringifys an object to a PowerShell expression (PSON,  PowerShell Object Notation).
@@ -168,9 +168,16 @@ function ConvertTo-Expression {
     .LINK
         https://www.powershellgallery.com/packages/ConvertFrom-Expression
 #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', '', Scope = 'Function')] # https://github.com/PowerShell/PSScriptAnalyzer/issues/1472
     [CmdletBinding()][OutputType([scriptblock])] param(
-        [Parameter(ValueFromPipeLine = $True)][Alias('InputObject')] $Object, [int]$Depth = 9, [int]$Expand = $Depth,
-        [int]$Indentation = 4, [string]$IndentChar = ' ', [switch]$Strong, [switch]$Explore,
+        [Parameter(ValueFromPipeLine = $True)][Alias('InputObject')] $Object,
+        [int]$Depth = 9,
+        [int]$Expand = $Depth,
+        [int]$Indentation = 4,
+        [string]$IndentChar = ' ',
+        [switch]$Strong,
+        [switch]$Explore,
+        [ValidateSet("Name", "Fullname", "Auto")][string]$TypeNaming = 'Auto',
         [string]$NewLine = [System.Environment]::NewLine
     )
     begin {
@@ -183,11 +190,29 @@ function ConvertTo-Expression {
             function Here ([string]$Item) { if ($Item -match '[\r\n]') { "@'$NewLine$Item$NewLine'@$NewLine" } else { Quote $Item } }
             function Stringify ($Object, $Cast = $Type, $Convert) {
                 $Casted = $PSBoundParameters.ContainsKey('Cast')
+                function GetTypeName($Type) {
+                    if ($Type -is [Type]) {
+                        if ($TypeNaming -eq 'Fullname') { $Typename = $Type.Fullname }
+                        elseif ($TypeNaming -eq 'Name') { $Typename = $Type.Name }
+                        else {
+                            $Typename = "$Type"
+                             if ($Type.Namespace -eq 'System' -or $Type.Namespace -eq 'System.Management.Automation') {
+                                if ($Typename.Contains('.')) { $Typename = $Type.Name }
+                            }
+                        }
+                        if ($Type.GetType().GenericTypeArguments) {
+                            $TypeArgument = ForEach ($TypeArgument in $Type.GetType().GenericTypeArguments) { GetTypeName $TypeArgument }
+                            $Arguments = if ($Expand -ge 0) { $TypeArgument -join ', ' } else { $TypeArgument -join ',' }
+                            $Typename = $Typename.GetType().Split(0x60)[0] + '[' + $Arguments + ']'
+                        }
+                        $Typename
+                    } else { $Type }
+                }
                 function Prefix ($Object, [switch]$Parenthesis) {
                     if ($Convert) { if ($ListItem) { $Object = "($Convert $Object)" } else { $Object = "$Convert $Object" } }
                     if ($Parenthesis) { $Object = "($Object)" }
-                    if ($Explore) { if ($Strong) { "[$Type]$Object" } else { $Object } }
-                    elseif ($Strong -or $Casted) { if ($Cast) { "[$Cast]$Object" } }
+                    if ($Explore) { if ($Strong) { "[$(GetTypeName $Type)]$Object" } else { $Object } }
+                    elseif ($Strong -or $Casted) { if ($Cast) { "[$(GetTypeName $Cast)]$Object" } }
                     else { $Object }
                 }
                 function Iterate ($Object, [switch]$Strong = $Strong, [switch]$ListItem, [switch]$Level) {
@@ -211,7 +236,7 @@ function ConvertTo-Expression {
                         if ($Properties) { $List = [Ordered]@{}; foreach ($Property in $Properties) { $List[(QuoteKey $Property.Name)] = Iterate $Property.Value } }
                     }
                     if ($List -is [array]) {
-                        if (!$Casted -and ($Type.Name -eq 'Object[]' -or "$Type".Contains('.'))) { $Cast = 'array' }
+                        #if (!$Casted -and ($Type.Name -eq 'Object[]' -or "$Type".Contains('.'))) { $Cast = 'array' }
                         if (!$List.Count) { Prefix '@()' }
                         elseif ($List.Count -eq 1) {
                             if ($Strong) { Prefix "$List" }
