@@ -1,14 +1,16 @@
 #Requires -Modules @{ModuleName="Pester"; ModuleVersion="5.0.0"}
 
-$here = Split-Path -Parent $MyInvocation.MyCommand.Path
-$sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path).Replace(".Tests.", ".")
-. "$here\$sut"
+$MyPath = [System.IO.FileInfo]$MyInvocation.MyCommand.Path
+$AliasName = [System.IO.Path]::GetFileNameWithoutExtension($MyPath.Name) -Replace '\.Tests$'
+$ScriptName = [System.IO.Path]::ChangeExtension($AliasName, 'ps1')
+$ScriptPath = Join-Path $MyPath.DirectoryName $ScriptName
+
+Set-Alias -Name $AliasName -Value $ScriptPath
 
 Function Should-BeEqualTo ($Value2, [Parameter(ValueFromPipeLine = $True)]$Value1) {
     $Value1 | Should -Be $Value2
     $Value1 | Should -BeOfType $Value2.GetType().Name
 }
-
 
 Describe 'ConvertTo-Expression' {
 
