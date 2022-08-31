@@ -1,5 +1,5 @@
 <#PSScriptInfo
-.VERSION 3.3.8
+.VERSION 3.3.9
 .GUID 5f167621-6abe-4153-a26c-f643e1716720
 .AUTHOR Ronald Bode (iRon)
 .DESCRIPTION Stringifys an object to a PowerShell expression (PSON,  PowerShell Object Notation).
@@ -15,8 +15,6 @@
 .RELEASENOTES
 .PRIVATEDATA
 #>
-
-using namespace System.Management.Automation
 
 <#
 .SYNOPSIS
@@ -102,8 +100,7 @@ using namespace System.Management.Automation
 
 .EXAMPLE
 
-    PS C:\> (Get-UICulture).Calendar | ConvertTo-Expression
-
+    PS> (Get-UICulture).Calendar | ConvertTo-Expression
     [pscustomobject]@{
         'AlgorithmType' = 1
         'CalendarType' = 1
@@ -114,8 +111,8 @@ using namespace System.Management.Automation
         'TwoDigitYearMax' = 2029
     }
 
-    PS C:\> (Get-UICulture).Calendar | ConvertTo-Expression -Strong
-
+.EXAMPLE
+    PS> (Get-UICulture).Calendar | ConvertTo-Expression -Strong
     [pscustomobject]@{
         'AlgorithmType' = [System.Globalization.CalendarAlgorithmType]'SolarCalendar'
         'CalendarType' = [System.Globalization.GregorianCalendarTypes]'Localized'
@@ -128,12 +125,9 @@ using namespace System.Management.Automation
 
 .EXAMPLE
 
-    PS C:\>Get-Date | Select-Object -Property * | ConvertTo-Expression | Out-File .\Now.ps1
-
-    PS C:\>$Now = .\Now.ps1	# $Now = Get-Content .\Now.Ps1 -Raw | Invoke-Expression
-
-    PS C:\>$Now
-
+    PS> Get-Date | Select-Object -Property * | ConvertTo-Expression | Out-File .\Now.ps1
+    PS> $Now = .\Now.ps1	# $Now = Get-Content .\Now.Ps1 -Raw | Invoke-Expression
+    PS> $Now
     Date        : 1963-10-07 12:00:00 AM
     DateTime    : Monday,  October 7,  1963 10:47:00 PM
     Day         : 7
@@ -152,21 +146,24 @@ using namespace System.Management.Automation
 
 .EXAMPLE
 
-    PS C:\>@{Account="User01";Domain="Domain01";Admin="True"} | ConvertTo-Expression -Expand -1	# Compress the PowerShell output
-
+    PS> @{Account="User01";Domain="Domain01";Admin="True"} | ConvertTo-Expression -Expand -1	# Compress the PowerShell output
     @{'Admin'='True';'Account'='User01';'Domain'='Domain01'}
 
 .EXAMPLE
 
-    PS C:\>WinInitProcess = Get-Process WinInit | ConvertTo-Expression	# Convert the WinInit Process to a PowerShell expression
+    PS> WinInitProcess = Get-Process WinInit | ConvertTo-Expression	# Convert the WinInit Process to a PowerShell expression
 
 .EXAMPLE
 
-    PS C:\>Get-Host | ConvertTo-Expression -Depth 4	# Reveal complex object hierarchies
+    PS> Get-Host | ConvertTo-Expression -Depth 4	# Reveal complex object hierarchies
 
 .LINK
     https://www.powershellgallery.com/packages/ConvertFrom-Expression
 #>
+
+using namespace System.Management.Automation
+
+
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', '', Scope = 'Function')] # https://github.com/PowerShell/PSScriptAnalyzer/issues/1472
 [CmdletBinding()][OutputType([scriptblock])] param(
     [Parameter(ValueFromPipeLine = $True)][Alias('InputObject')] $Object,
