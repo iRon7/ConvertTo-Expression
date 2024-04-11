@@ -1,13 +1,13 @@
 <#PSScriptInfo
-.VERSION 3.3.9
+.VERSION 3.4.0
 .GUID 5f167621-6abe-4153-a26c-f643e1716720
 .AUTHOR Ronald Bode (iRon)
-.DESCRIPTION Stringifys an object to a PowerShell expression (PSON,  PowerShell Object Notation).
+.DESCRIPTION This cmdlet is deprecated, a replacement might be found in the ObjectGraphTools module.
 .COMPANYNAME
 .COPYRIGHT
 .TAGS PSON PowerShell Object Notation Expression Serialize Stringify
 .LICENSE https://github.com/iRon7/ConvertTo-Expression/LICENSE.txt
-.PROJECTURI https://github.com/iRon7/ConvertTo-Expression
+.PROJECTURI https://github.com/iRon7/ObjectGraphTools
 .ICON https://raw.githubusercontent.com/iRon7/ConvertTo-Expression/master/ConvertTo-Expression.png
 .EXTERNALMODULEDEPENDENCIES
 .REQUIREDSCRIPTS
